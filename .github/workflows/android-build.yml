@@ -1,0 +1,96 @@
+name: Build ChessBuddy APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chessbuddy-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NDK_VERSION: "27.2.12479018"
+    defaults:
+      run:
+        working-directory: project/ChessBuddy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download and extract the Android project archive
+        working-directory: .
+        run: |
+          set -euo pipefail
+          curl -fL https://raw.githubusercontent.com/Mahirabsar2/chessbuddy/main/ChessBuddy-v0.3.0-source.zip -o ChessBuddy-v0.3.0-source.zip
+          mkdir -p project
+          unzip -q ChessBuddy-v0.3.0-source.zip -d project
+          test -f project/ChessBuddy/app/build.gradle
+          test -f project/ChessBuddy/scripts/build_stockfish_android.sh
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android platform, build-tools and NDK
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "ndk;${NDK_VERSION}"
+          echo "ANDROID_NDK_HOME=${SDK}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Run project tests
+        run: node tests/run-all.js
+
+      - name: Build Stockfish for Android arm64
+        run: bash scripts/build_stockfish_android.sh
+
+      - name: Build release APK
+        run: gradle --no-daemon --stacktrace assembleRelease
+
+      - name: Verify APK
+        run: bash scripts/verify_apk.sh app/build/outputs/apk/release/app-release.apk build-info/VERIFIED_CHECKS.txt
+
+      - name: Package APK and build information
+        run: |
+          set -euo pipefail
+          VER="$(grep -m1 versionName app/build.gradle | sed -E "s/.*'([^']+)'.*/\\1/")"
+          NAME="ChessBuddy-v${VER}-build${GITHUB_RUN_NUMBER}"
+          mkdir -p release
+          cp app/build/outputs/apk/release/app-release.apk "release/${NAME}-arm64.apk"
+          cp "$GITHUB_WORKSPACE/ChessBuddy-v0.3.0-source.zip" "release/${NAME}-source.zip"
+          cp build-info/VERIFIED_CHECKS.txt release/VERIFIED_CHECKS.txt
+          cp build-info/stockfish.txt release/STOCKFISH_PROVENANCE.txt
+          APK_SHA="$(sha256sum "release/${NAME}-arm64.apk" | cut -d' ' -f1)"
+          {
+            echo "ChessBuddy ${VER} (build ${GITHUB_RUN_NUMBER})"
+            echo "Commit: ${GITHUB_SHA}"
+            echo "APK: ${NAME}-arm64.apk"
+            echo "APK sha256: ${APK_SHA}"
+            echo "Source archive: ${NAME}-source.zip"
+            echo "Toolchain: Java 17, Gradle 8.9, NDK ${NDK_VERSION}"
+            echo "Signing: personal sideload key; not for Play Store"
+            echo
+            cat build-info/stockfish.txt
+          } > release/BUILD_INFO.txt
+          (cd release && sha256sum * > SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChessBuddy-build-${{ github.run_number }}
+          path: project/ChessBuddy/release/*
+          if-no-files-found: error
+          retention-days: 14
