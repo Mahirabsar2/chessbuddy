@@ -3,6 +3,13 @@ name: Build ChessBuddy APK
 on:
   push:
     branches: [main, master]
+    paths-ignore:
+      - 'PROJECT_STATUS.md'
+      - 'PROJECT_LOG.md'
+      - 'PROJECT_LOG_*.md'
+      - 'README.md'
+      - 'BUILD_ON_GITHUB.md'
+      - 'NOTICE.md'
   workflow_dispatch:
 
 permissions:
