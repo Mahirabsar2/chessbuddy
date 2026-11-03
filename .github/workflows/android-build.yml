@@ -72,6 +72,7 @@ jobs:
         run: |
           set -euo pipefail
           PASS="$(openssl rand -hex 24)"
+          echo "::add-mask::$PASS"
           keytool -genkeypair -noprompt -keystore "$RUNNER_TEMP/chessbuddy.keystore" -storepass "$PASS" \
             -keypass "$PASS" -alias chessbuddy-sideload -keyalg RSA -keysize 2048 -validity 3650 \
             -dname "CN=ChessBuddy Personal Build, OU=Development, O=ChessBuddy, C=BD"
