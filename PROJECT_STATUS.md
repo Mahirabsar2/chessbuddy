@@ -1,31 +1,48 @@
-# ChessBuddy v0.3.0 — project status (2026-10-31)
+# ChessBuddy v0.4.0 — project status (2026-11-03)
 
-## Blocked
-- **No APK was built.** The environment this was written in has no network, no Gradle, no Android SDK/NDK, and no Stockfish source, so it cannot compile an APK or Stockfish.
-  Single next action: run the GitHub workflow (`BUILD_ON_GITHUB.md`). The workflow builds Stockfish, the APK and the matching source ZIP, and records what it verified.
+## Current build
+- Source: `ChessBuddy-v0.4.0-source.zip` (188,010 bytes), present in the repository root.
+- Repository commit used by CI: `32b42da7580b0cf8dc03df3dbdf850b3101596c8`.
+- GitHub Actions run #7: **SUCCESS** — https://github.com/Mahirabsar2/chessbuddy/actions/runs/41595023404
+- Artifact: `ChessBuddy-build-7` (79,901,351 bytes), containing the arm64 APK, the exact v0.4.0 source ZIP copied into the release package, verification/provenance files, and SHA-256 manifest.
+- Artifact expiry: 2026-11-17 07:16:57 UTC. Download before it expires.
+- APK: package `com.chessbuddy`, versionCode `1007`, versionName `0.4.0`, 79,716,455 bytes, arm64-v8a.
 
-## Completed (written)
-- Android app: WebView shell, Stockfish process bridge, Keystore-backed key storage, native HTTP with HTTPS-only policy, share/copy, edge-to-edge insets, back handling.
-- Real Stockfish integration (official tag, NDK build script, UCI client, self-test screen).
-- chess.com-style UI, bots 400–full strength, custom Elo, AI-model opponents, AI vs AI, coach, game review, archive/replay, FEN/PGN export and import.
-- Professional prompts: board diagram, every move explained, tactical facts, Stockfish ground truth, legal-move list, PNG screenshot.
-- CI workflow with APK verification and a source ZIP built from the exact commit.
+## Product requirements and source capabilities
+- Fresh Android chess app built around real Stockfish, not random/fake engine moves.
+- Play, Coach, Archive/History and Settings areas with a Chess.com-inspired board and pieces.
+- Human-vs-AI and AI-vs-AI modes.
+- Tap selection and drag/drop, legal-move validation, captures, promotion, undo, board flip, hints and evaluation display.
+- OpenAI-compatible/GPT and Anthropic/Claude model/provider settings. README documents Android Keystore-encrypted API-key storage.
+- Every release artifact must include the exact matching source ZIP beside the APK, plus verification/provenance and checksums.
 
-## Previously verified (historical report, 2026-10-31)
-- The previous author reported chess.js perft on five standard positions, 55 logic tests, 26 UI tests (mock bridge), Java compilation against stubs, and URL-policy JVM checks.
-- Gradle/AGP build, NDK compile of Stockfish, APK itself, installation and behaviour on a real phone, real Stockfish strength calibration, real API calls, HttpTransport and EngineProcess at runtime, and on-device Keystore behaviour were not verified in that report.
+## v0.4.0 changes
+- Separated capture rings and legal-move dots from piece artwork to avoid overlay collisions.
+- Resized evaluation bar and score labels for narrow screens.
+- Added drag ghost and move-arrival animation alongside drag/drop.
+- Added seven Stockfish style presets inspired by Capablanca, Tal, Polgar, Fischer, Nakamura, Kasparov and Carlsen. They are not official Chess.com bots.
+- Removed the committed sideload keystore from the source package.
+- Set app versionName to 0.4.0.
 
-## Independent review (2026-11-02)
-- Latest reviewed repository commit before this log update: `cc77271ed32f4ef8488245f633b68d31e14e8e84`. The local v0.3.0 source archive matches the repository ZIP blob exactly.
-- Re-run: 50/50 non-perft logic tests passed; perft depths 1–2 passed 10/10 checks across five positions; Java PolicyTest passed; 12/12 JavaScript files passed syntax checks; Android manifest XML, both shell scripts, and ZIP integrity passed.
-- The complete `node tests/run-all.js` did not finish within 300 seconds while executing the deeper perft suite (depths 1–4). The workflow invokes the same runner, so this is a likely CI blocker. Depth 3–4 is not verified.
-- Playwright UI tests were not run because Playwright is unavailable. Live API requests, Gradle/NDK build, APK signing verification, installation, and device tests were not run.
-- No APK is present in the available workspace. The environment has Java 21 and Node 22, but no Gradle, Android SDK/NDK, sdkmanager, or adb. GitHub API access from this environment failed DNS resolution.
-- The source contains a committed throwaway sideload keystore with the documented default password; it is not suitable for Play distribution or wider release.
+## Verified by GitHub Actions on 2026-11-03
+- `node tests/run-all.js`: **55/55 logic tests passed** across six suites: coach 9/9, engine 14/14, perft 5/5 positions, prompts 13/13, review 3/3, strength/models 11/11.
+- Stockfish sf_19 compiled successfully for Android arm64 using NDK 27.2.12479018. Source commit: `edb0d9db6731067ec50ce619ff372b463bc4dd5d`. The embedded ARM aarch64 ELF includes the NNUE network.
+- Gradle release build: **BUILD SUCCESSFUL**, 41 actionable tasks.
+- APK verification passed: non-empty APK, ZIP integrity, web assets, arm64 Stockfish binary, package/version/ABI/INTERNET permission, extractNativeLibs, and APK signature verification.
+- Release packaging and artifact upload both completed successfully. Workflow copies the same `ChessBuddy-v0.4.0-source.zip` used for the build into the artifact and creates `SHA256SUMS.txt`.
 
-## Next actions
-1. Make the CI perft suite complete reliably (depth 1–2 in the fast suite; deeper checks optional or optimized).
-2. Run GitHub Actions and inspect actual logs and artifact list.
-3. Verify APK signature, embedded ARM64 Stockfish binary, matching source ZIP, and checksums.
-4. Install on Android and test piece selection, legal moves, promotion, undo, human-vs-AI, AI-vs-AI, Stockfish self-test, and real Claude/OpenAI calls.
-5. Replace the throwaway signing key before wider distribution.
+## Not yet verified / blockers
+- Playwright/browser UI tests were not run in this workflow.
+- No physical Android installation or device interaction test has been performed.
+- Real OpenAI/Claude network calls and on-device API-key/Keystore behaviour have not been tested. Provider request formatting has logic-test coverage only.
+- The APK uses a newly generated ephemeral personal sideload key. It is not a Play Store signing key and cannot sign future updates with the same identity. Configure a persistent user-owned signing key before distributing update builds.
+- The successful CI build is ready for sideload testing, but device validation is still outstanding.
+
+## Exact next steps
+1. Download `ChessBuddy-build-7` before its 2026-11-17 expiry; keep the APK and matching source ZIP together.
+2. Install the arm64 APK on an Android device and run Settings → Run engine self-test.
+3. Test tap/drag selection, legal and illegal drops, captures, castling, en passant, promotion, undo, evaluation layout, human-vs-AI, AI-vs-AI, Coach and Archive.
+4. Test Claude and OpenAI-compatible providers with valid keys entered in the app; verify success and error handling on-device.
+5. Run the separate browser UI suite and record its actual result.
+6. Before the next update build, configure a persistent signing key in GitHub Actions secrets and update the workflow to reuse it securely.
+7. For every later release, build from a versioned source ZIP and package that exact ZIP with the APK and SHA-256 manifest. Do not call a build device-validated until the device checks pass.
