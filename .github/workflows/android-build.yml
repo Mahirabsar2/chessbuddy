@@ -24,15 +24,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download and extract the Android project archive
+      - name: Download and extract ChessBuddy v0.4.0 source
         working-directory: .
         run: |
           set -euo pipefail
-          curl -fL https://raw.githubusercontent.com/Mahirabsar2/chessbuddy/main/ChessBuddy-v0.3.0-source.zip -o ChessBuddy-v0.3.0-source.zip
+          curl -fL https://raw.githubusercontent.com/Mahirabsar2/chessbuddy/main/ChessBuddy-v0.4.0-source.zip -o ChessBuddy-v0.4.0-source.zip
           mkdir -p project
-          unzip -q ChessBuddy-v0.3.0-source.zip -d project
+          unzip -q ChessBuddy-v0.4.0-source.zip -d project
           test -f project/ChessBuddy/app/build.gradle
           test -f project/ChessBuddy/scripts/build_stockfish_android.sh
+          grep -q "versionName '0.4.0'" project/ChessBuddy/app/build.gradle
 
       - uses: actions/setup-java@v4
         with:
@@ -60,20 +61,32 @@ jobs:
       - name: Build Stockfish for Android arm64
         run: bash scripts/build_stockfish_android.sh
 
+      - name: Configure personal APK signing
+        run: |
+          set -euo pipefail
+          PASS="$(openssl rand -hex 24)"
+          keytool -genkeypair -noprompt -keystore "$RUNNER_TEMP/chessbuddy.keystore" -storepass "$PASS" \
+            -keypass "$PASS" -alias chessbuddy-sideload -keyalg RSA -keysize 2048 -validity 3650 \
+            -dname "CN=ChessBuddy Personal Build, OU=Development, O=ChessBuddy, C=BD"
+          echo "CB_KEYSTORE_FILE=$RUNNER_TEMP/chessbuddy.keystore" >> "$GITHUB_ENV"
+          echo "CB_KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
+          echo "CB_KEY_ALIAS=chessbuddy-sideload" >> "$GITHUB_ENV"
+          echo "CB_KEY_PASSWORD=$PASS" >> "$GITHUB_ENV"
+
       - name: Build release APK
         run: gradle --no-daemon --stacktrace assembleRelease
 
       - name: Verify APK
         run: bash scripts/verify_apk.sh app/build/outputs/apk/release/app-release.apk build-info/VERIFIED_CHECKS.txt
 
-      - name: Package APK and build information
+      - name: Package APK and matching source archive
         run: |
           set -euo pipefail
           VER="$(grep -m1 versionName app/build.gradle | sed -E "s/.*'([^']+)'.*/\\1/")"
           NAME="ChessBuddy-v${VER}-build${GITHUB_RUN_NUMBER}"
           mkdir -p release
           cp app/build/outputs/apk/release/app-release.apk "release/${NAME}-arm64.apk"
-          cp "$GITHUB_WORKSPACE/ChessBuddy-v0.3.0-source.zip" "release/${NAME}-source.zip"
+          cp "$GITHUB_WORKSPACE/ChessBuddy-v0.4.0-source.zip" "release/${NAME}-source.zip"
           cp build-info/VERIFIED_CHECKS.txt release/VERIFIED_CHECKS.txt
           cp build-info/stockfish.txt release/STOCKFISH_PROVENANCE.txt
           APK_SHA="$(sha256sum "release/${NAME}-arm64.apk" | cut -d' ' -f1)"
@@ -84,7 +97,7 @@ jobs:
             echo "APK sha256: ${APK_SHA}"
             echo "Source archive: ${NAME}-source.zip"
             echo "Toolchain: Java 17, Gradle 8.9, NDK ${NDK_VERSION}"
-            echo "Signing: personal sideload key; not for Play Store"
+            echo "Signing: ephemeral personal sideload key; not for Play Store"
             echo
             cat build-info/stockfish.txt
           } > release/BUILD_INFO.txt
