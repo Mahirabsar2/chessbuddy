@@ -4,7 +4,7 @@
 - Version: v0.4.0
 - Source archive: `ChessBuddy-v0.4.0-source.zip` (188,010 bytes, present in repository root).
 - Repository: `Mahirabsar2/chessbuddy`
-- Build commit: `32b42da7580b0cf8dc03df3dbdf850b3101596c8`
+- Latest workflow commit: `26625d6d80f521db15b21e749a6cca5881fd1cf9`
 
 ## Requirements retained
 - Fresh Android chess app using real Stockfish.
@@ -22,32 +22,32 @@
 - Removed the committed sideload keystore and set versionName to 0.4.0.
 
 ## Build and tests verified
-- GitHub Actions run #7 / ID `41595023404`: **SUCCESS**.
-- Run URL: https://github.com/Mahirabsar2/chessbuddy/actions/runs/41595023404
+- Latest GitHub Actions run #12 / ID `41648945256`: **SUCCESS**.
+- Run URL: https://github.com/Mahirabsar2/chessbuddy/actions/runs/41648945256
 - `node tests/run-all.js`: **55/55 passed** across coach 9/9, engine 14/14, perft 5/5 positions, prompts 13/13, review 3/3 and strength/models 11/11.
-- Stockfish sf_19 compiled successfully for ARM aarch64 using NDK 27.2.12479018; source commit `edb0d9db6731067ec50ce619ff372b463bc4dd5d`.
-- Gradle release build succeeded (41 actionable tasks).
-- APK verification passed: APK non-empty and ZIP-valid; UI assets packaged; ARM64 Stockfish ELF present; package `com.chessbuddy`, versionCode 1007, versionName 0.4.0; INTERNET permission, arm64-v8a ABI, extractNativeLibs and signature checks passed.
-- APK size: 79,716,455 bytes.
-- Artifact `ChessBuddy-build-7`: 79,901,351 bytes. It includes the APK, the exact source ZIP used by the workflow, verification/provenance records and `SHA256SUMS.txt`. Expires 2026-11-17 07:16:57 UTC.
-- Artifact signing is an ephemeral personal sideload key, not a persistent Play Store/update key.
+- Stockfish sf_19 compiled for ARM aarch64 using NDK 27.2.12479018; source commit `edb0d9db6731067ec50ce619ff372b463bc4dd5d`; binary SHA-256 `0470a60d55495faaa56fa4a47a938569abdbeb80cd6b4c12dcc4efc139a11bd6`.
+- Gradle release build succeeded.
+- APK verification passed: APK non-empty and ZIP-valid; UI assets packaged; ARM64 Stockfish ELF present; package `com.chessbuddy`, versionCode 1012, versionName 0.4.0; INTERNET permission, arm64-v8a ABI, extractNativeLibs and signature checks passed.
+- APK size: 79,716,447 bytes.
+- Artifact `ChessBuddy-build-12`: 79,901,351 bytes. It includes the APK, the exact source ZIP used by the workflow, verification/provenance records and `SHA256SUMS.txt`. Expires 2026-11-17 13:58:42 UTC.
+- Workflow now skips documentation-only pushes and masks its generated ephemeral signing password. Build #12 logs confirm masking.
 
 ## Files and versions
 - `ChessBuddy-v0.3.0-source.zip`: retained as previous source.
 - `ChessBuddy-v0.4.0-source.zip`: current source package.
-- `.github/workflows/android-build.yml`: updated to build v0.4.0 and package its exact source ZIP with the APK.
-- `PROJECT_STATUS.md`, `PROJECT_LOG.md`, this daily log: updated with verified CI results and remaining work.
-- Build artifact: `ChessBuddy-build-7` (download from the Actions run above).
+- `.github/workflows/android-build.yml`: builds v0.4.0, runs tests, compiles Stockfish, verifies APK and packages the matching source ZIP.
+- `PROJECT_STATUS.md`, `PROJECT_LOG.md`, this daily log: current build results and next steps.
+- Build artifact: `ChessBuddy-build-12` (download from the Actions run above).
 
 ## Blockers / not yet verified
 - Browser UI tests were not run.
 - No Android device install or interaction testing yet.
-- Real OpenAI/Claude network calls and on-device Keystore behaviour remain untested; provider request formatting is covered by logic tests.
+- Real OpenAI/Claude network calls and on-device Keystore behaviour remain untested; provider request formatting is covered by logic tests only.
 - The ephemeral signing key cannot be reused for future app updates. A persistent user-owned signing key must be configured before update releases.
 - This is a successful CI build, not yet a device-validated release.
 
 ## Exact next steps
-1. Download `ChessBuddy-build-7` before 2026-11-17 07:16:57 UTC; retain the APK and matching source ZIP together.
+1. Download `ChessBuddy-build-12` before 2026-11-17 13:58:42 UTC; retain the APK and matching source ZIP together.
 2. Install the arm64 APK on Android and run Settings → Run engine self-test.
 3. Test tap/drag selection, legal and illegal drops, captures, castling, en passant, promotion, undo, evaluation layout, human-vs-AI, AI-vs-AI, Coach and Archive.
 4. Test real Claude/OpenAI-compatible requests and key storage/error handling on-device.
