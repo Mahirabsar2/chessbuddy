@@ -1,47 +1,56 @@
 # ChessBuddy daily progress — 2026-11-03
 
-## Target release
-- Source package: ChessBuddy v0.4.0
-- Local archive: `ChessBuddy-v0.4.0-source.zip`
+## Current target
+- Version: v0.4.0
+- Source archive: `ChessBuddy-v0.4.0-source.zip` (188,010 bytes, present in repository root).
 - Repository: `Mahirabsar2/chessbuddy`
-- Base repository commit reviewed: `28e7e8ec7a7aa2ddd9cbf89bb1b7bd7744be2ae5`
+- Build commit: `32b42da7580b0cf8dc03df3dbdf850b3101596c8`
 
 ## Requirements retained
 - Fresh Android chess app using real Stockfish.
-- Play, Coach, Archive and Settings tabs; polished Chess.com-inspired board and pieces.
+- Play, Coach, Archive/History and Settings tabs; Chess.com-inspired board and pieces.
 - Human-vs-AI and AI-vs-AI.
-- Correct tap selection, drag-and-drop, legal move validation, captures, promotion and undo.
-- GPT/OpenAI-compatible and Claude settings; API keys stored in Android Keystore.
-- Every release must include the exact matching source ZIP beside the APK, plus verification details and checksums.
+- Reliable tap/drag selection and legal move validation, captures, promotion and undo.
+- OpenAI-compatible/GPT and Anthropic/Claude provider/API-key settings; README documents Android Keystore-encrypted key storage.
+- Every release must ship the exact matching source ZIP alongside its APK, with verification/provenance and SHA-256 checksums.
 
-## v0.4.0 source changes
-- Fixed capture-target styling collision that distorted board-square overlays.
-- Separated capture rings and legal-move dots from piece artwork.
+## v0.4.0 source work
+- Fixed capture-target styling collision and separated capture rings/legal-move dots from piece artwork.
 - Adjusted evaluation bar and score-label sizing for narrow screens.
-- Added touch/mouse drag-and-drop, floating drag ghost and move-arrival animation.
-- Added seven Stockfish style presets named for Capablanca, Tal, Polgar, Fischer, Nakamura, Kasparov and Carlsen. These are inspired presets, not official Chess.com bots or reproductions.
-- Removed committed sideload keystore; CI uses configured signing secrets or an ephemeral personal-build key.
-- Set app versionName to 0.4.0.
-- CI perft suite uses depth 1–2 because the previous deeper suite timed out.
+- Added drag ghost and move-arrival animation.
+- Added seven Stockfish style presets inspired by Capablanca, Tal, Polgar, Fischer, Nakamura, Kasparov and Carlsen; these are not official Chess.com bots.
+- Removed the committed sideload keystore and set versionName to 0.4.0.
 
-## Tests run against the recovered local v0.4.0 archive
-- `node tests/run-all.js`: PASS, 55 tests across six suites; perft 5/5 standard positions.
-- Java policy test: PASS (from the archive's test script on the prior local verification record; not rerun in this GitHub operation).
-- JavaScript syntax checks: recorded as PASS in the archive's status file; not rerun in this GitHub operation.
-- UI browser tests: NOT RUN.
-- Android Gradle/NDK build, APK verification, live provider calls and physical-device tests: NOT RUN.
+## Build and tests verified
+- GitHub Actions run #7 / ID `41595023404`: **SUCCESS**.
+- Run URL: https://github.com/Mahirabsar2/chessbuddy/actions/runs/41595023404
+- `node tests/run-all.js`: **55/55 passed** across coach 9/9, engine 14/14, perft 5/5 positions, prompts 13/13, review 3/3 and strength/models 11/11.
+- Stockfish sf_19 compiled successfully for ARM aarch64 using NDK 27.2.12479018; source commit `edb0d9db6731067ec50ce619ff372b463bc4dd5d`.
+- Gradle release build succeeded (41 actionable tasks).
+- APK verification passed: APK non-empty and ZIP-valid; UI assets packaged; ARM64 Stockfish ELF present; package `com.chessbuddy`, versionCode 1007, versionName 0.4.0; INTERNET permission, arm64-v8a ABI, extractNativeLibs and signature checks passed.
+- APK size: 79,716,455 bytes.
+- Artifact `ChessBuddy-build-7`: 79,901,351 bytes. It includes the APK, the exact source ZIP used by the workflow, verification/provenance records and `SHA256SUMS.txt`. Expires 2026-11-17 07:16:57 UTC.
+- Artifact signing is an ephemeral personal sideload key, not a persistent Play Store/update key.
 
-## GitHub operation
-- Confirmed the target repository is `Mahirabsar2/chessbuddy`, default branch `main`.
-- Reviewed current README, PROJECT_STATUS, PROJECT_LOG and Android Actions workflow.
-- The current repository workflow still downloads the v0.3.0 source archive. It must be changed to consume v0.4.0 before a v0.4.0 APK build can be considered.
-- The connected GitHub actions available in this session support text-file and Git-object writes, but do not expose a binary file upload action for the 188 KB ZIP. Therefore the v0.4.0 source archive and app code have NOT been pushed in this operation.
-- No GitHub Actions run was triggered, because the existing workflow would build v0.3.0, not v0.4.0.
+## Files and versions
+- `ChessBuddy-v0.3.0-source.zip`: retained as previous source.
+- `ChessBuddy-v0.4.0-source.zip`: current source package.
+- `.github/workflows/android-build.yml`: updated to build v0.4.0 and package its exact source ZIP with the APK.
+- `PROJECT_STATUS.md`, `PROJECT_LOG.md`, this daily log: updated with verified CI results and remaining work.
+- Build artifact: `ChessBuddy-build-7` (download from the Actions run above).
+
+## Blockers / not yet verified
+- Browser UI tests were not run.
+- No Android device install or interaction testing yet.
+- Real OpenAI/Claude network calls and on-device Keystore behaviour remain untested; provider request formatting is covered by logic tests.
+- The ephemeral signing key cannot be reused for future app updates. A persistent user-owned signing key must be configured before update releases.
+- This is a successful CI build, not yet a device-validated release.
 
 ## Exact next steps
-1. Upload `ChessBuddy-v0.4.0-source.zip` to the repository root (or push its extracted source tree).
-2. Update `.github/workflows/android-build.yml` so it builds v0.4.0, runs the 55-test suite, compiles Stockfish for arm64, builds and verifies the APK, and packages the exact same source ZIP.
-3. Run the workflow and inspect its actual logs and artifacts.
-4. Verify APK signature, embedded arm64 Stockfish binary, source-commit identity and SHA-256 checksums.
-5. Install on Android and test drag/tap selection, captures, legal/illegal drops, promotion, undo, evaluation layout, both game modes, bot presets, and real OpenAI/Claude requests.
-6. Only call v0.4.0 a release after those checks pass.
+1. Download `ChessBuddy-build-7` before 2026-11-17 07:16:57 UTC; retain the APK and matching source ZIP together.
+2. Install the arm64 APK on Android and run Settings → Run engine self-test.
+3. Test tap/drag selection, legal and illegal drops, captures, castling, en passant, promotion, undo, evaluation layout, human-vs-AI, AI-vs-AI, Coach and Archive.
+4. Test real Claude/OpenAI-compatible requests and key storage/error handling on-device.
+5. Run the browser UI suite and record the result.
+6. Configure a persistent signing key in GitHub Actions before the next update build.
+7. Keep every future APK paired with the exact source ZIP used to build it and a SHA-256 manifest.
