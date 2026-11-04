@@ -1,27 +1,59 @@
-# Get your APK in 3 steps (no computer tools needed)
+# Build and install ChessBuddy
 
-1. **Create a repository** on github.com (New repository, private is fine).
-2. **Upload this folder's contents**: *Add file → Upload files*, then drag in *everything inside* the `ChessBuddy` folder
-   (including the `.github` folder; on a Mac press Cmd+Shift+. in Finder to show it). Commit.
-   Uploading triggers the build automatically on `main`/`master`.
-3. Open the **Actions** tab → **Build ChessBuddy APK**. Wait about 10–15 minutes for the green tick, open the run and download
-   the artifact `ChessBuddy-build-N` (or open **Releases** on the repo page for direct links).
-   Unzip → install `ChessBuddy-v…-arm64.apk` on an Android phone (allow "install unknown apps").
+## Current repository setup
 
-You get: the APK, the exact source ZIP, `BUILD_INFO.txt`, `VERIFIED_CHECKS.txt` (what the build really checked), `STOCKFISH_PROVENANCE.txt`, `SHA256SUMS.txt`.
+The repository workflow currently builds from the versioned source archive at the repository root:
 
-## If the build fails
-Open the failed run, click the red step, copy the last ~60 lines of its log and send them to me. Typical culprits: NDK/SDK version names, the Stockfish `make` step.
+- Source archive: `ChessBuddy-v0.4.0-source.zip`
+- App version: `0.4.0`
+- Workflow: `.github/workflows/android-build.yml`
 
-## Updating the app later
-Each build has a higher version code and is signed with the same key, so a new APK installs over the old one and keeps your games and settings.
+A push to `main`/ `master` that changes build inputs, or a manual run from **Actions → Build ChessBuddy APK → Run workflow**, starts the build. Documentation-only changes are excluded from automatic builds.
 
-## Signing with your own key (optional)
-Repository → Settings → Secrets and variables → Actions: `CB_KEYSTORE_BASE64` (base64 of your .jks/.keystore), `CB_KEYSTORE_PASSWORD`, `CB_KEY_ALIAS`, `CB_KEY_PASSWORD`.
-Without them the workflow uses `app/sideload.keystore` (password `android`) – a public throwaway key, fine for personal installs, **not for Google Play**.
+## Downloading a build
 
-## Phones
-64-bit ARM (arm64-v8a), Android 6.0+ (API 23). Practically every phone since 2017. Android emulators on PCs (x86) are not supported by this build.
+1. Open the repository's **Actions** tab.
+2. Open the successful **Build ChessBuddy APK** run.
+3. Download its `ChessBuddy-build-N` artifact and extract it.
 
-## Other ways
-Android Studio: open the folder, run `scripts/build_stockfish_android.sh` first (needs the NDK, Linux/macOS shell), then Build → Build APK.
+The artifact contains:
+- the arm64 APK;
+- the exact source ZIP used for that APK;
+- `BUILD_INFO.txt` and Stockfish provenance;
+- `VERIFIED_CHECKS.txt`;
+- `SHA256SUMS.txt`.
+
+Actions artifacts are temporary. The current verified build #12 expires **2026-11-17 13:58:42 UTC**. Download and retain the APK and matching source ZIP together.
+
+Latest verified run: https://github.com/Mahirabsar2/chessbuddy/actions/runs/41648945256
+
+## Building a future version
+
+The workflow currently pins the v0.4.0 archive URL and checks that the extracted Gradle project declares versionName `0.4.0`. To release a new source version:
+
+1. Add the new versioned source ZIP to the repository root.
+2. Update the archive URL, extraction filename, version check and source-ZIP copy name in `.github/workflows/android-build.yml`.
+3. Confirm the ZIP's Gradle versionName matches the workflow check.
+4. Commit the source archive and workflow change; inspect the resulting Actions run and artifact.
+
+Never pair an APK with a different source archive. Keep the exact archive used for that build in the same artifact and verify its checksum.
+
+## Signing limitation
+
+**The current workflow generates a fresh ephemeral sideload signing key for every run.** It does not currently read persistent signing-key secrets. APKs from later runs therefore cannot be assumed to update-install over earlier APKs.
+
+Before distributing update builds, add workflow support for user-owned GitHub Actions secrets:
+- `CB_KEYSTORE_BASE64`
+- `CB_KEYSTORE_PASSWORD`
+- `CB_KEY_ALIAS`
+- `CB_KEY_PASSWORD`
+
+Then configure those secrets with a securely backed-up signing key. Do not publish the keystore or its passwords. Until persistent signing support is implemented and verified, treat each build as a separate personal sideload build.
+
+## Supported device
+
+The current build targets 64-bit ARM (`arm64-v8a`). x86 Android emulators are not supported by this build.
+
+## If a build fails
+
+Open the failed Actions run, select the failed step and share the final relevant log lines. Do not report a build as successful unless the run conclusion is success and the verification/package steps completed.
