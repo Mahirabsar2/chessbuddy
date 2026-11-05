@@ -53,3 +53,12 @@
 5. Test real Claude/OpenAI-compatible requests, key persistence and error handling on-device.
 6. Add persistent user-owned signing-key secret support to the workflow before building update releases.
 7. Build each future version from a versioned source ZIP and package that exact ZIP with the APK and SHA-256 manifest.
+
+
+## 2026-11-05 — repository review and daily status
+- Reviewed app-source baseline `9e9391fff4855c70be48b46ec06750ea7e0dbb40`. Compare against build #12 commit `26625d6d80f521db15b21e749a6cca5881fd1cf9` shows seven later commits, all documentation/log changes; no app source or workflow changes.
+- Confirmed `ChessBuddy-v0.4.0-source.zip` remains present in the repository root (188,010 bytes); expanded app source is not checked into the root and CI extracts the ZIP.
+- Inspected build #12 job metadata and actual job logs: 55/55 logic tests passed; Stockfish sf_19 arm64 build succeeded; Gradle release build succeeded; APK verification and artifact upload succeeded.
+- Confirmed artifact `ChessBuddy-build-12` (ID `13237225252`, 79,901,351 bytes) remains available and expires 2026-11-17 13:58:42 UTC.
+- Updated `PROJECT_LOG_2026-11-05.md`, `PROJECT_STATUS.md`, and README build instructions. No new app source, APK, source archive or tests were produced/run today.
+- Remaining gaps: browser UI suite, physical-device tests, live provider/Keystore runtime checks, and persistent signing-key support.
