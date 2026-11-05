@@ -39,7 +39,7 @@ Settings → *Run engine self-test* runs a real depth-12 search on your phone an
 - Nothing is sent anywhere until you ask the coach or play an AI-model opponent.
 
 ## Build
-See `BUILD_ON_GITHUB.md`. Short version: put this folder in a GitHub repository, open **Actions → Build ChessBuddy APK → Run workflow**, download the APK from the run (or the Releases page).
+See `BUILD_ON_GITHUB.md`. The current workflow builds from the versioned source ZIP in the repository root. Push the source ZIP/workflow changes or run **Actions → Build ChessBuddy APK → Run workflow**, then download the `ChessBuddy-build-N` artifact from the successful Actions run. Each artifact contains the APK, the exact matching source ZIP, build provenance, verification results and `SHA256SUMS.txt`. The current workflow does not publish a GitHub Release.
 
 ## Layout
 ```
