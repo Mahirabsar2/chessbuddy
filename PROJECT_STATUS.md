@@ -15,7 +15,7 @@
 
 ## Repository state
 - Repository: `Mahirabsar2/chessbuddy`, branch `main`.
-- Latest commit: `cc5002f0f9400fac454e501a39415f80e1d4b6f1` (2026-11-05).
+- Latest app-source review baseline: `cc5002f0f9400fac454e501a39415f80e1d4b6f1` (2026-11-05); the subsequent 2026-11-06 commits update project logs/status only.
 - Compared with build #12 commit, the 12 later commits modify documentation/log files only; no app-source or workflow changes.
 - Branches found: `main`, `master`; no pull requests.
 - Available archives: `ChessBuddy-v0.4.0-source.zip` (188,010 bytes) and `ChessBuddy-v0.3.0-source.zip` (187,655 bytes). No 4.0 archive is present.
