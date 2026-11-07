@@ -50,3 +50,12 @@
 - Re-verified run #12: success; actual logs confirm 55/55 logic tests, Stockfish sf_19 arm64 compilation, Gradle release build, APK/signature verification, and successful upload of artifact `ChessBuddy-build-12` (ID `13237225252`). Artifact includes the exact v0.4.0 ZIP copied by the workflow and expires 2026-11-17 13:58:42 UTC.
 - No tests were run today; historical CI results above are not 4.0 test results. No new app code, APK or source ZIP was produced.
 - Next: obtain Claude's actual 4.0 source, review it against requirements, update workflow to build the exact 4.0 archive, run tests and device validation, then package APK + matching source ZIP + provenance/checksums.
+
+
+## 2026-11-07 — repository review
+- Reviewed current `main` head `674123fbd09468f4c0096b6cd78ae1ba7c959a61`. Compared with build #12 commit `26625d6d80f521db15b21e749a6cca5881fd1cf9`: 16 commits ahead, with documentation/status changes only; no app-source or workflow changes.
+- Confirmed only `main` and `master` branches, no pull requests, and no 4.0 source files/archive. `main` still contains v0.4.0 (188,010 bytes) and v0.3.0 (187,655 bytes) source ZIPs; expanded source is absent from the root. `master` has neither ZIP.
+- Confirmed the Android workflow still hardcodes v0.4.0 and runs only `node tests/run-all.js`; it is not ready to build Claude's 4.0.
+- Rechecked Actions run #12: success; historical evidence remains 55/55 logic tests, Stockfish sf_19 arm64 build, Gradle release build, APK/signature verification and matching-source artifact upload. Artifact ID `13237225252` remains available until 2026-11-17 13:58:42 UTC.
+- No tests were run today; no new app source, APK or source ZIP was produced. No Android device, Playwright UI or live provider/Keystore runtime test is verified.
+- Next: obtain Claude's actual 4.0 source and exact matching ZIP, review requirements, pin that ZIP in CI, run full logic/UI/native/build verification, package APK + matching ZIP + provenance/checksums, then device-test and configure persistent signing.
