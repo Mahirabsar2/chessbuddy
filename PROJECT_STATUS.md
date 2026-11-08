@@ -1,4 +1,4 @@
-# ChessBuddy — project status (reviewed 2026-11-07)
+# ChessBuddy — project status (reviewed 2026-11-08)
 
 ## Release distinction
 - **v0.4.0 / build #12 is a test build only**, not the real ChessBuddy 4.0 release.
@@ -15,9 +15,9 @@
 
 ## Repository state
 - Repository: `Mahirabsar2/chessbuddy`; default branch: `main`.
-- Latest `main` commit: `674123fbd09468f4c0096b6cd78ae1ba7c959a61` (2026-11-06 13:32 UTC).
-- Compared with build #12 commit `26625d6d80f521db15b21e749a6cca5881fd1cf9`, current `main` is 16 commits ahead. The changed files are documentation/status files only; no app-source or workflow changes.
-- Only branches found: `main` and `master`; no pull requests found.
+- Latest `main` commit: `e2781fb09a4539753d4b52f6122705afee85d6de` (2026-11-08 13:56 UTC).
+- Compared with build #12 commit `26625d6d80f521db15b21e749a6cca5881fd1cf9`, current `main` is 21 commits ahead and 0 behind. All 10 changed paths are documentation/build-instruction files; no app-source or workflow changes.
+- Only branches found: `main` (`e2781fb09a4539753d4b52f6122705afee85d6de`) and `master` (`a7203fa75eead88e4bd9a3acfbebf9d5994e8148`); no pull requests or GitHub releases found. The `master` tree contains project-level Gradle/configuration and documentation only, with no app source or source ZIP.
 - `main` contains `ChessBuddy-v0.4.0-source.zip` (188,010 bytes) and `ChessBuddy-v0.3.0-source.zip` (187,655 bytes). The expanded source directory is absent from the repository root. `master` contains neither source ZIP.
 - No 4.0 source files or archive were found.
 - `.github/workflows/android-build.yml` still downloads `ChessBuddy-v0.4.0-source.zip`, checks versionName 0.4.0, runs `node tests/run-all.js`, and packages that same v0.4.0 ZIP. It is not a 4.0 build workflow.
@@ -34,7 +34,15 @@
 ## 2026-11-07 review activity
 - Compared build #12 with current `main`: 16 documentation-only commits ahead; app source and workflow unchanged.
 - Confirmed only `main` and `master` branches, no pull requests, and no visible 4.0 source.
-- No app code, APK, source ZIP or tests were produced/run during this review.
+- No app code, APK, source ZIP or tests were produced/run during that review.
+
+## 2026-11-08 review activity
+- Final repository head after the daily-log commits: `e2781fb09a4539753d4b52f6122705afee85d6de`. Compared with build #12, `main` is 21 commits ahead and 0 behind; all 10 changed paths are documentation/build-instruction files only.
+- Reconfirmed branches `main` and `master`; no pull requests or GitHub releases. The `master` tree has no app source or source ZIP.
+- Reconfirmed v0.4.0 (188,010 bytes) and v0.3.0 (187,655 bytes) are the only app-source ZIPs on `main`; expanded app source and all 4.0 files remain absent.
+- Rechecked the workflow: it still fetches and packages v0.4.0, checks versionName 0.4.0, runs only `node tests/run-all.js`, and does not run Playwright.
+- Latest Actions run remains #12 / ID `41648945256`, successful for the v0.4.0 test build. Its artifact `ChessBuddy-build-12` (ID `13237225252`) is not expired and expires 2026-11-17 13:58:42 UTC.
+- No build or tests were run in this review; no app source, APK or source ZIP was produced. No Android device, UI, live-provider or on-device key-persistence tests are verified.
 
 ## Blockers
 - Claude's actual 4.0 source is not yet available in the inspected repository.
