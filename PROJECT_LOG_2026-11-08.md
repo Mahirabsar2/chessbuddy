@@ -1,10 +1,10 @@
 # ChessBuddy daily progress — 2026-11-08
 
 ## Review result
-- Reviewed repository `Mahirabsar2/chessbuddy` on `main`. Pre-review head: `db9a46a0a2accc6164f7d6076c68c62c8ef2bf24` (2026-11-07).
-- Compared with test-build commit `26625d6d80f521db15b21e749a6cca5881fd1cf9`: `main` is 19 commits ahead; all 9 changed paths are documentation/build-instruction files. No app-source or workflow changes.
-- Only branches are `main` and `master`. No pull requests or GitHub releases are present. No 4.0 branch, archive or source files were found.
-- `main` contains `ChessBuddy-v0.4.0-source.zip` (188,010 bytes) and `ChessBuddy-v0.3.0-source.zip` (187,655 bytes). The expanded app source directory is absent. `master` contains neither source ZIP nor an app source tree.
+- Final reviewed `main` head: `e2781fb09a4539753d4b52f6122705afee85d6de` (2026-11-08 13:56 UTC).
+- Compared with test-build commit `26625d6d80f521db15b21e749a6cca5881fd1cf9`: 21 commits ahead, 0 behind. All 10 changed paths are documentation/build-instruction files; no app-source or workflow changes.
+- Only branches are `main` and `master`. No pull requests or GitHub releases. The `master` tree contains project-level Gradle/configuration and documentation only, no app source or source ZIP.
+- `main` contains `ChessBuddy-v0.4.0-source.zip` (188,010 bytes) and `ChessBuddy-v0.3.0-source.zip` (187,655 bytes). Expanded app source is absent. No 4.0 branch, source files, matching ZIP or release is visible.
 - User-reported: Claude is preparing the real ChessBuddy 4.0. Its files are still not visible in this repository.
 
 ## Requirements retained
@@ -16,14 +16,14 @@
 - Every release must contain the exact source ZIP used for its APK beside the APK, with provenance and SHA-256 checksums.
 
 ## Files and versions
-- Latest available app-source baseline: **v0.4.0 test build only**. The v0.4.0 ZIP exists, but the expanded source is not checked in; the archive was not extracted for a line-by-line code audit in this review.
-- No ChessBuddy 4.0 source, matching ZIP, APK or release was produced today.
-- Documentation produced today: `PROJECT_LOG_2026-11-08.md`; project status and master history also updated.
-- `.github/workflows/android-build.yml` remains pinned to v0.4.0: it downloads that ZIP, checks `versionName '0.4.0'`, runs `node tests/run-all.js`, builds Stockfish arm64, builds/verifies the APK and copies the same ZIP into the artifact. It does not run Playwright UI tests.
+- Latest available app-source baseline: **v0.4.0 test build only**. Its ZIP exists; expanded app source is not checked into the repository.
+- No ChessBuddy 4.0 source, matching ZIP, APK or release was produced.
+- Documentation files maintained: `PROJECT_LOG_2026-11-08.md`, `PROJECT_LOG.md` and `PROJECT_STATUS.md`.
+- `.github/workflows/android-build.yml` remains pinned to v0.4.0: downloads that ZIP, checks versionName 0.4.0, runs `node tests/run-all.js`, builds Stockfish arm64, builds/verifies the APK and copies the same ZIP into the artifact. It does not run Playwright UI tests.
 
 ## Tests and build results
-- No tests or builds were run today.
-- Historical test build #12 / Actions run ID `41648945256`, commit `26625d6d80f521db15b21e749a6cca5881fd1cf9`: **SUCCESS**. Current Actions job metadata and logs show every job step completed successfully.
+- **No tests or builds were run today.**
+- Historical test build #12 / Actions run ID `41648945256`, commit `26625d6d80f521db15b21e749a6cca5881fd1cf9`: **SUCCESS**. Latest Actions metadata confirms all job steps succeeded.
 - Historical logic tests: **55/55 passed** — coach 9/9, engine 14/14, perft 5/5, prompts 13/13, review 3/3, strength/models 11/11.
 - Historical Stockfish sf_19 arm64 build, Gradle release APK build, APK checks and signature verification succeeded. APK: `com.chessbuddy`, versionCode 1012, versionName 0.4.0, 79,716,447 bytes.
 - Artifact `ChessBuddy-build-12`, ID `13237225252`, 79,901,351 bytes, is not expired and is scheduled to expire 2026-11-17 13:58:42 UTC. It contains the APK, matching v0.4.0 source ZIP, provenance and SHA-256 manifest. This is test-build CI evidence only, not 4.0 or device validation.
