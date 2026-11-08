@@ -15,8 +15,8 @@
 
 ## Repository state
 - Repository: `Mahirabsar2/chessbuddy`; default branch: `main`.
-- Latest `main` commit: `e2781fb09a4539753d4b52f6122705afee85d6de` (2026-11-08 13:56 UTC).
-- Compared with build #12 commit `26625d6d80f521db15b21e749a6cca5881fd1cf9`, current `main` is 21 commits ahead and 0 behind. All 10 changed paths are documentation/build-instruction files; no app-source or workflow changes.
+- Latest reviewed non-documentation `main` head: `e2781fb09a4539753d4b52f6122705afee85d6de` (2026-11-08 13:56 UTC); subsequent commits in this review update documentation/logs only.
+- At the reviewed code head, `main` was 21 commits ahead and 0 behind build #12 commit `26625d6d80f521db15b21e749a6cca5881fd1cf9`. All 10 paths changed since that build were documentation/build-instruction files; the later commits made during this review also update documentation only. No app-source or workflow changes.
 - Only branches found: `main` (`e2781fb09a4539753d4b52f6122705afee85d6de`) and `master` (`a7203fa75eead88e4bd9a3acfbebf9d5994e8148`); no pull requests or GitHub releases found. The `master` tree contains project-level Gradle/configuration and documentation only, with no app source or source ZIP.
 - `main` contains `ChessBuddy-v0.4.0-source.zip` (188,010 bytes) and `ChessBuddy-v0.3.0-source.zip` (187,655 bytes). The expanded source directory is absent from the repository root. `master` contains neither source ZIP.
 - No 4.0 source files or archive were found.
