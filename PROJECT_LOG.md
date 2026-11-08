@@ -60,10 +60,10 @@
 - Next: obtain Claude's actual 4.0 source and exact matching ZIP, review requirements, pin that ZIP in CI, run full logic/UI/native/build verification, package APK + matching ZIP + provenance/checksums, then device-test and configure persistent signing.
 
 ## 2026-11-08 — repository review
-- Reviewed `main` at pre-review head `db9a46a0a2accc6164f7d6076c68c62c8ef2bf24`. Compared with test-build commit `26625d6d80f521db15b21e749a6cca5881fd1cf9`: 19 commits ahead; all 9 changed paths are documentation/build-instruction files. No app-source or workflow changes.
-- Confirmed only `main` and `master` branches; no pull requests or GitHub releases. No 4.0 branch, archive or source files are visible.
-- `main` still contains v0.4.0 (188,010 bytes) and v0.3.0 (187,655 bytes) source ZIPs. Expanded app source is absent; `master` has neither ZIP nor an app source tree.
-- Rechecked workflow: it remains pinned to v0.4.0, runs `node tests/run-all.js`, builds Stockfish arm64 and packages the same v0.4.0 ZIP. It does not run Playwright UI tests.
-- Rechecked run #12 job metadata and logs: all job steps succeeded; 55/55 logic tests passed; Stockfish sf_19 arm64 build, Gradle release APK build, APK verification, signature verification and artifact upload succeeded. Artifact `ChessBuddy-build-12` (ID `13237225252`) remains available until 2026-11-17 13:58:42 UTC. This remains test-build evidence only.
-- No tests or builds were run today; no app source, APK or source ZIP was produced. No device, UI, live-provider or on-device key-persistence test is verified.
-- Next: obtain Claude's actual 4.0 source and exact matching ZIP, inspect all requirements, update CI to pin that ZIP, run logic/UI/native/build checks, verify APK + exact ZIP + provenance/checksums, then device-test and configure persistent signing.
+- Reviewed `main` at final head `e2781fb09a4539753d4b52f6122705afee85d6de` (2026-11-08 13:56 UTC). Compared with test-build commit `26625d6d80f521db15b21e749a6cca5881fd1cf9`: 21 commits ahead, 0 behind; all 10 changed paths are documentation/build-instruction files. No app-source or workflow changes.
+- Confirmed only branches `main` and `master`; no pull requests or GitHub releases. `master` contains project-level Gradle/configuration and documentation only, with no app source or source ZIP.
+- `main` contains only the v0.4.0 test-source ZIP (188,010 bytes) and v0.3.0 ZIP (187,655 bytes) as app-source archives. The expanded app source is absent. No 4.0 branch, source files, matching ZIP or release is visible.
+- Confirmed `.github/workflows/android-build.yml` still downloads and packages v0.4.0, checks `versionName '0.4.0'`, runs only `node tests/run-all.js`, and does not run Playwright UI tests.
+- Latest Actions run remains #12 / ID `41648945256`: **SUCCESS** for the v0.4.0 test build. All job steps succeeded; historical evidence is 55/55 logic tests, Stockfish sf_19 arm64 compilation, Gradle release APK build, APK/signature verification and artifact upload. Artifact `ChessBuddy-build-12` (ID `13237225252`) remains available until 2026-11-17 13:58:42 UTC.
+- No tests or builds were run in this review; no new app source, APK or source ZIP was produced. No Android device, Playwright UI, live-provider or on-device key-persistence test is verified.
+- Next: obtain Claude's actual 4.0 source and exact matching ZIP, inspect it against all requirements, pin that ZIP/version in CI, run logic/UI/native/build checks, verify APK + exact ZIP + provenance/checksums, then device-test and configure persistent signing.
