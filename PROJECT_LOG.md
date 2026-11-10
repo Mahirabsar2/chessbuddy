@@ -89,3 +89,20 @@
   5. Run logic, UI, Java policy, Stockfish NDK and Gradle/APK verification; record only observed results.
   6. Inspect the final artifact to confirm the APK, exact source ZIP, provenance and SHA-256 manifest are all present.
   7. Install on a physical Android device and verify board interactions, human-vs-AI, AI-vs-AI, real provider requests and API-key save/reload.
+
+
+## 2026-11-10 — repository review
+- Reviewed `main` at head `7d42836c4888d2994edf8ef006387ea79e1bced5` (2026-11-09 13:20 UTC). Compared with the build #15 commit `80ec03208d3646c5e5ebb266a4fd7f3101bdfc90`: 3 commits ahead, 0 behind; only `PROJECT_LOG.md`, `PROJECT_LOG_2026-11-09.md` and `PROJECT_STATUS.md` changed. No app source or workflow changes.
+- Current root archives remain `ChessBuddy-v0.3.0-source.zip` (187,655 bytes) and `ChessBuddy-v0.4.0-source.zip` (226,940 bytes; blob SHA `aeb1fbe6e9d41e1c5c095742061439f109f8e5c8`). **No actual ChessBuddy 4.0 source ZIP or expanded 4.0 source tree is present.**
+- Important deletion history: commit `1287325` removed the v0.4.0 ZIP as requested, and Actions run #14 failed because the workflow's hardcoded download returned HTTP 404. The later commit `80ec032` reintroduced the exact same v0.4.0 ZIP blob; it is present again on `main`. Do not mistake this archive for the actual 4.0 source.
+- Latest verified CI remains run #15 / ID `42623107658` on `80ec032`: **SUCCESS**, but only for v0.4.0. All 18 job steps completed. Logic tests passed **70/70** (coach 9, coaches/clock 6, engine 14, perft 5, prompts 13, review/openings 10, strength/models 13). Stockfish sf_19 compiled for arm64; Gradle release build and APK verification succeeded.
+- Verified output: package `com.chessbuddy`, versionCode 1015, versionName `0.4.0`, APK 79,749,986 bytes, SHA-256 `7d42dc7bf1ef51599ec99c6406d8a868c21f71e739e2433cbe9da3d5c75ec214`. Artifact `ChessBuddy-build-15`, ID `13677721762`, includes the APK, exact v0.4.0 source ZIP, build info, Stockfish provenance, verification record and SHA-256 manifest; expires 2026-11-23 13:12:42 UTC.
+- No tests/builds were run during today's review. No new app source, APK or source ZIP was produced. Workflow still hardcodes v0.4.0 and runs only the logic suite; Playwright UI and Java policy suites are not wired into CI. Physical-device, live-provider and on-device API-key persistence tests remain unverified.
+- Security blockers remain: source ZIP contains `app/sideload.keystore` with a documented default password of `android`; treat it as exposed. CI uses a new ephemeral signing key per run. `SecretStore` can fall back to app-private plaintext if Keystore encryption fails.
+- Exact next steps:
+  1. Upload the actual Claude-produced ChessBuddy 4.0 source and its exact versioned ZIP; confirm the archive contains new code and internal version 4.0.
+  2. Review the 4.0 implementation against all required features and fix piece-selection/legal-move defects.
+  3. Update CI to build/package that exact ZIP and run logic, Playwright UI and Java policy suites.
+  4. Remove the exposed sideload keystore from future source archives and configure a persistent private signing key via GitHub Secrets.
+  5. Run and record Stockfish NDK, Gradle/APK, signature, UI and logic checks; inspect the final artifact for the exact matching ZIP, provenance and checksums.
+  6. Install on Android and verify board interactions, human-vs-AI, AI-vs-AI, real OpenAI/Claude requests and API-key save/reload.
