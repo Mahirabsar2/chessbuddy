@@ -106,3 +106,14 @@
   4. Remove the exposed sideload keystore from future source archives and configure a persistent private signing key via GitHub Secrets.
   5. Run and record Stockfish NDK, Gradle/APK, signature, UI and logic checks; inspect the final artifact for the exact matching ZIP, provenance and checksums.
   6. Install on Android and verify board interactions, human-vs-AI, AI-vs-AI, real OpenAI/Claude requests and API-key save/reload.
+
+
+## 2026-11-11 — repository review
+- Reviewed `main` at baseline head `431786003f4317ecbd82f11496ad0f42f4946a21`. Compared with build #15 commit `80ec03208d3646c5e5ebb266a4fd7f3101bdfc90`: 6 commits ahead, 0 behind; changes are documentation/log/status files only. No app source or workflow changes.
+- Checked both branches: `main` and `master`. No GitHub Releases are published. `main` contains only the v0.3.0 and v0.4.0 source archives; `master` has no app source/archive. Actual 4.0 ZIP and expanded source remain missing.
+- The v0.4.0 ZIP is present again on `main` (226,940 bytes), despite the earlier deletion. It is the old test archive, not actual 4.0. CI still hardcodes v0.4.0 for download, version validation and packaging.
+- Latest Actions run remains #15 / ID `42623107658`: **SUCCESS for v0.4.0 test build only**. All 18 job steps succeeded; logic tests passed **70/70** (coach 9, coaches/clock 6, engine 14, perft 5, prompts 13, review/openings 10, strength/models 13). Stockfish sf_19 arm64 compilation, Gradle release APK build and APK verification succeeded.
+- Verified APK: `com.chessbuddy`, versionCode 1015, versionName `0.4.0`, 79,749,986 bytes; SHA-256 `7d42dc7bf1ef51599ec99c6406d8a868c21f71e739e2433cbe9da3d5c75ec214`. Artifact `ChessBuddy-build-15` (ID `13677721762`) includes the APK and matching v0.4.0 ZIP with provenance, verification and SHA-256 files; expires 2026-11-23 13:12:42 UTC.
+- No new app source, APK, source archive, build or test was produced/run today. Playwright UI, Java policy, Android device, live-provider and on-device key-persistence checks remain unverified.
+- Blockers remain: actual 4.0 source missing; UI/Java tests absent from CI; source archive contains an exposed sideload keystore with documented default password; CI signing key is ephemeral; `SecretStore` has a plaintext fallback if Keystore encryption fails.
+- Next: obtain and inspect the actual 4.0 source/ZIP; review and fix selection/legal moves; update CI to build that exact archive and run logic/UI/Java suites; remove exposed keystore and plaintext fallback; configure persistent signing; verify APK + exact ZIP + provenance/checksums; then device-test both modes and provider/key-storage flows.
