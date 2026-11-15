@@ -31,6 +31,7 @@ jobs:
           mkdir -p project
           unzip -q ChessBuddy-v0.5.0-source.zip -d project
           patch --batch -p1 -d project < "$RUNNER_TEMP/chessbuddy-0.5.0.patch"
+          patch --batch -p1 -d project < overlays/perft-fast.patch
           rm -f project/ChessBuddy/app/sideload.keystore
           test -f project/ChessBuddy/app/build.gradle
           test -f project/ChessBuddy/app/src/main/assets/js/online.js
