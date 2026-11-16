@@ -146,6 +146,8 @@ jobs:
                'ChessBuddy/release/*' 'ChessBuddy/app/src/main/jniLibs/*' 'ChessBuddy/app/sideload.keystore')
           cp build-info/VERIFIED_CHECKS.txt "$GITHUB_WORKSPACE/release/VERIFIED_CHECKS.txt"
           cp build-info/stockfish.txt "$GITHUB_WORKSPACE/release/STOCKFISH_PROVENANCE.txt"
+          cp build-info/lc0.txt "$GITHUB_WORKSPACE/release/LC0_PROVENANCE.txt"
+          cp app/src/main/assets/models/maia-models.json "$GITHUB_WORKSPACE/release/MAIA_MODELS_MANIFEST.json"
           APK_SHA="$(sha256sum "$GITHUB_WORKSPACE/release/${NAME}-arm64.apk" | cut -d' ' -f1)"
           {
             echo "ChessBuddy ${VER} development build ${GITHUB_RUN_NUMBER}"
@@ -159,6 +161,7 @@ jobs:
             echo "Maia/Lc0: not enabled in this build"
             echo
             cat build-info/stockfish.txt
+            cat build-info/lc0.txt
           } > "$GITHUB_WORKSPACE/release/BUILD_INFO.txt"
           (cd "$GITHUB_WORKSPACE/release" && sha256sum * > SHA256SUMS.txt)
 
