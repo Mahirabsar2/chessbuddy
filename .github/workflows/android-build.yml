@@ -33,13 +33,9 @@ jobs:
           patch --batch -p1 -d project < overlays/perft-fast.patch
           cat overlays/ChessBuddy-v5.0-dev-1-part-*.b64 | base64 -d | gzip -d > "$RUNNER_TEMP/chessbuddy-5.0.patch"
           patch --batch -p1 -d project < "$RUNNER_TEMP/chessbuddy-5.0.patch"
-          cat overlays/ChessBuddy-v5.0-dev-2-part-*.b64 | base64 -d | gzip -d > "$RUNNER_TEMP/chessbuddy-5.0-2.patch"
-          patch --batch -p1 -d project < "$RUNNER_TEMP/chessbuddy-5.0-2.patch"
           rm -f project/ChessBuddy/app/sideload.keystore
           test -f project/ChessBuddy/app/build.gradle
           test -f project/ChessBuddy/supabase/functions/apply-online-move/index.ts
-          test -f project/ChessBuddy/scripts/build_lc0_android.sh
-          test -f project/ChessBuddy/app/src/main/assets/models/maia-models.json
           grep -q "versionName '5.0.0-dev.1'" project/ChessBuddy/app/build.gradle
 
       - uses: actions/setup-node@v4
@@ -100,10 +96,6 @@ jobs:
         working-directory: project/ChessBuddy
         run: bash scripts/build_stockfish_android.sh
 
-      - name: Build Lc0 for Android arm64 and generate verified Maia model manifest
-        working-directory: project/ChessBuddy
-        run: bash scripts/build_lc0_android.sh
-
       - name: Configure signing key
         working-directory: project/ChessBuddy
         env:
@@ -154,8 +146,6 @@ jobs:
                'ChessBuddy/release/*' 'ChessBuddy/app/src/main/jniLibs/*' 'ChessBuddy/app/sideload.keystore')
           cp build-info/VERIFIED_CHECKS.txt "$GITHUB_WORKSPACE/release/VERIFIED_CHECKS.txt"
           cp build-info/stockfish.txt "$GITHUB_WORKSPACE/release/STOCKFISH_PROVENANCE.txt"
-          cp build-info/lc0.txt "$GITHUB_WORKSPACE/release/LC0_PROVENANCE.txt"
-          cp app/src/main/assets/models/maia-models.json "$GITHUB_WORKSPACE/release/MAIA_MODELS_MANIFEST.json"
           APK_SHA="$(sha256sum "$GITHUB_WORKSPACE/release/${NAME}-arm64.apk" | cut -d' ' -f1)"
           {
             echo "ChessBuddy ${VER} development build ${GITHUB_RUN_NUMBER}"
@@ -166,10 +156,9 @@ jobs:
             echo "Toolchain: Java 17, Gradle 8.9, NDK ${NDK_VERSION}"
             echo "Signing mode: ${CB_SIGNING_MODE} (ephemeral keys require reinstalling on the next build)"
             echo "Online move validation: source prepared; Supabase deployment is still pending"
-            echo "Maia/Lc0: Maia 1100/1500/1900 models via optional on-demand download; ARM64 Lc0 build included"
+            echo "Maia/Lc0: not enabled in this branch build"
             echo
             cat build-info/stockfish.txt
-            cat build-info/lc0.txt
           } > "$GITHUB_WORKSPACE/release/BUILD_INFO.txt"
           (cd "$GITHUB_WORKSPACE/release" && sha256sum * > SHA256SUMS.txt)
 
