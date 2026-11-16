@@ -1,46 +1,55 @@
-name: Build ChessBuddy 0.5.0 APK
+name: Build ChessBuddy 5.0 development APK
 
 on:
   push:
-    branches: [chessbuddy-0.5.0-dev]
+    branches: [chessbuddy-5.0-final-dev]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: chessbuddy-0.5.0-${{ github.ref }}
+  group: chessbuddy-5.0-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       NDK_VERSION: "27.2.12479018"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract and patch the uploaded 0.5.0 source
-        working-directory: .
+      - name: Extract base source and apply reviewed overlays
         run: |
           set -euo pipefail
           test -f ChessBuddy-v0.5.0-source.zip
           ls overlays/ChessBuddy-v0.5.0-patch-*.b64 >/dev/null
-          cat overlays/ChessBuddy-v0.5.0-patch-*.b64 | base64 -d | gzip -d > "$RUNNER_TEMP/chessbuddy-0.5.0.patch"
+          cat overlays/ChessBuddy-v0.5.0-patch-*.b64 | base64 -d | gzip -d > "$RUNNER_TEMP/chessbuddy-base.patch"
           mkdir -p project
           unzip -q ChessBuddy-v0.5.0-source.zip -d project
-          patch --batch -p1 -d project < "$RUNNER_TEMP/chessbuddy-0.5.0.patch"
+          patch --batch -p1 -d project < "$RUNNER_TEMP/chessbuddy-base.patch"
           patch --batch -p1 -d project < overlays/perft-fast.patch
+          cat overlays/ChessBuddy-v5.0-dev-1-part-*.b64 | base64 -d | gzip -d > "$RUNNER_TEMP/chessbuddy-5.0.patch"
+          patch --batch -p1 -d project < "$RUNNER_TEMP/chessbuddy-5.0.patch"
           rm -f project/ChessBuddy/app/sideload.keystore
           test -f project/ChessBuddy/app/build.gradle
-          test -f project/ChessBuddy/app/src/main/assets/js/online.js
-          grep -q "versionName '0.5.0'" project/ChessBuddy/app/build.gradle
+          test -f project/ChessBuddy/supabase/functions/apply-online-move/index.ts
+          grep -q "versionName '5.0.0-dev.1'" project/ChessBuddy/app/build.gradle
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
 
       - uses: android-actions/setup-android@v3
         with:
@@ -50,37 +59,72 @@ jobs:
         run: |
           set -euo pipefail
           SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "ndk;${NDK_VERSION}"
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "ndk:${NDK_VERSION}"
           echo "ANDROID_NDK_HOME=${SDK}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
 
-      - name: Run complete project tests
+      - name: Node logic tests
         working-directory: project/ChessBuddy
         run: node tests/run-all.js
+
+      - name: Java policy and bridge compile tests
+        working-directory: project/ChessBuddy
+        run: bash tests/java/run.sh
+
+      - name: Install Playwright and Chromium
+        working-directory: project/ChessBuddy
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Headless Android-WebView UI tests
+        working-directory: project/ChessBuddy
+        env:
+          SHOTS_DIR: ${{ runner.temp }}/chessbuddy-ui-shots
+        run: node tests/ui/ui.test.js
+
+      - name: Deno Edge Function validation tests and type-check
+        working-directory: project/ChessBuddy
+        run: |
+          deno test --config supabase/functions/apply-online-move/deno.json supabase/functions/_shared/online-validation.test.ts
+          deno check --config supabase/functions/apply-online-move/deno.json supabase/functions/apply-online-move/index.ts
 
       - name: Build Stockfish for Android arm64
         working-directory: project/ChessBuddy
         run: bash scripts/build_stockfish_android.sh
 
-      - name: Create temporary CI signing key
+      - name: Configure signing key
         working-directory: project/ChessBuddy
+        env:
+          CB_KEYSTORE_BASE64: ${{ secrets.CB_KEYSTORE_BASE64 }}
+          CB_KEYSTORE_PASSWORD: ${{ secrets.CB_KEYSTORE_PASSWORD }}
+          CB_KEY_ALIAS: ${{ secrets.CB_KEY_ALIAS }}
+          CB_KEY_PASSWORD: ${{ secrets.CB_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          PASS="$(openssl rand -hex 24)"
-          echo "::add-mask::$PASS"
-          keytool -genkeypair -noprompt -keystore "$RUNNER_TEMP/chessbuddy-ci.keystore" \
-            -storepass "$PASS" -keypass "$PASS" -alias chessbuddy-ci \
-            -keyalg RSA -keysize 2048 -validity 3650 \
-            -dname "CN=ChessBuddy Personal Build, OU=Development, O=ChessBuddy, C=BD"
-          echo "CB_KEYSTORE_FILE=$RUNNER_TEMP/chessbuddy-ci.keystore" >> "$GITHUB_ENV"
-          echo "CB_KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
-          echo "CB_KEY_ALIAS=chessbuddy-ci" >> "$GITHUB_ENV"
-          echo "CB_KEY_PASSWORD=$PASS" >> "$GITHUB_ENV"
+          if [ -n "${CB_KEYSTORE_BASE64:-}" ]; then
+            test -n "${CB_KEYSTORE_PASSWORD:-}" && test -n "${CB_KEY_ALIAS:-}" && test -n "${CB_KEY_PASSWORD:-}"
+            printf '%s' "$CB_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/chessbuddy-release.keystore"
+            echo "CB_KEYSTORE_FILE=$RUNNER_TEMP/chessbuddy-release.keystore" >> "$GITHUB_ENV"
+            echo "CB_SIGNING_MODE=persistent" >> "$GITHUB_ENV"
+          else
+            PASS="$(openssl rand -hex 24)"
+            echo "::add-mask::$PASS"
+            keytool -genkeypair -noprompt -keystore "$RUNNER_TEMP/chessbuddy-ci.keystore" \
+              -storepass "$PASS" -keypass "$PASS" -alias chessbuddy-ci \
+              -keyalg RSA -keysize 2048 -validity 3650 \
+              -dname "CN=ChessBuddy Development, OU=Personal, O=ChessBuddy, C=BD"
+            echo "CB_KEYSTORE_FILE=$RUNNER_TEMP/chessbuddy-ci.keystore" >> "$GITHUB_ENV"
+            echo "CB_KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
+            echo "CB_KEY_ALIAS=chessbuddy-ci" >> "$GITHUB_ENV"
+            echo "CB_KEY_PASSWORD=$PASS" >> "$GITHUB_ENV"
+            echo "CB_SIGNING_MODE=ephemeral" >> "$GITHUB_ENV"
+          fi
 
-      - name: Build release APK
+      - name: Build development APK
         working-directory: project/ChessBuddy
         run: gradle --no-daemon --stacktrace assembleRelease
 
@@ -88,7 +132,7 @@ jobs:
         working-directory: project/ChessBuddy
         run: bash scripts/verify_apk.sh app/build/outputs/apk/release/app-release.apk build-info/VERIFIED_CHECKS.txt
 
-      - name: Package APK and matching patched source
+      - name: Package APK and exact source
         working-directory: project/ChessBuddy
         run: |
           set -euo pipefail
@@ -99,18 +143,20 @@ jobs:
           rm -f app/sideload.keystore
           (cd "$GITHUB_WORKSPACE/project" && zip -qr "$GITHUB_WORKSPACE/release/${NAME}-source.zip" ChessBuddy \
             -x 'ChessBuddy/.gradle/*' 'ChessBuddy/**/build/*' 'ChessBuddy/build-info/*' \
-               'ChessBuddy/release/*' 'ChessBuddy/app/src/main/jniLibs/*')
+               'ChessBuddy/release/*' 'ChessBuddy/app/src/main/jniLibs/*' 'ChessBuddy/app/sideload.keystore')
           cp build-info/VERIFIED_CHECKS.txt "$GITHUB_WORKSPACE/release/VERIFIED_CHECKS.txt"
           cp build-info/stockfish.txt "$GITHUB_WORKSPACE/release/STOCKFISH_PROVENANCE.txt"
           APK_SHA="$(sha256sum "$GITHUB_WORKSPACE/release/${NAME}-arm64.apk" | cut -d' ' -f1)"
           {
-            echo "ChessBuddy ${VER} (build ${GITHUB_RUN_NUMBER})"
+            echo "ChessBuddy ${VER} development build ${GITHUB_RUN_NUMBER}"
             echo "Commit: ${GITHUB_SHA}"
             echo "APK: ${NAME}-arm64.apk"
             echo "APK sha256: ${APK_SHA}"
-            echo "Source archive: ${NAME}-source.zip (the patched source used to build this APK)"
+            echo "Source archive: ${NAME}-source.zip (exact patched source used for this APK)"
             echo "Toolchain: Java 17, Gradle 8.9, NDK ${NDK_VERSION}"
-            echo "Signing: ephemeral personal sideload key; not for Play Store or update installs from another run"
+            echo "Signing mode: ${CB_SIGNING_MODE} (ephemeral keys require reinstalling on the next build)"
+            echo "Online move validation: source prepared; Supabase deployment is still pending"
+            echo "Maia/Lc0: not enabled in this build"
             echo
             cat build-info/stockfish.txt
           } > "$GITHUB_WORKSPACE/release/BUILD_INFO.txt"
@@ -118,7 +164,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ChessBuddy-0.5.0-build-${{ github.run_number }}
+          name: ChessBuddy-5.0.0-dev.1-build-${{ github.run_number }}
           path: release/*
           if-no-files-found: error
           retention-days: 14
