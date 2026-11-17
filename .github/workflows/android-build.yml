@@ -95,7 +95,7 @@ jobs:
           verifier_path.write_text(verifier)
           PY
 
-          bash -n scripts/verify_apk.sh
+          bash -n project/ChessBuddy/scripts/verify_apk.sh
           python3 - <<'PY'
           from pathlib import Path
           import os, zipfile
