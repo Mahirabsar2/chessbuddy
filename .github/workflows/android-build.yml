@@ -22,7 +22,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 180
     env:
       NDK_VERSION: "27.2.12479018"
     defaults:
@@ -31,20 +31,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download and extract Patch 5 LC0 source
+      - name: Extract ChessBuddy v1.0.0-rc1 source from Patch 5
         working-directory: .
         run: |
           set -euo pipefail
-          curl -fL https://raw.githubusercontent.com/Mahirabsar2/chessbuddy/Mahirabsar2-patch-5/ChessBuddy-v1.0.0-rc1-lc0-patch4-source.zip -o ChessBuddy-v1.0.0-rc1-lc0-patch4-source.zip
-          mkdir -p project
+          test -f ChessBuddy-v1.0.0-rc1-lc0-patch4-source.zip
+          mkdir -p project/ChessBuddy
           unzip -q ChessBuddy-v1.0.0-rc1-lc0-patch4-source.zip -d project
+          APP_GRADLE="$(find project -path '*/app/build.gradle' -print -quit)"
+          test -n "$APP_GRADLE" || { echo "No app/build.gradle found in source ZIP"; exit 1; }
+          SOURCE_ROOT="$(dirname "$(dirname "$APP_GRADLE")")"
+          if [ "$SOURCE_ROOT" != "project/ChessBuddy" ]; then cp -a "$SOURCE_ROOT"/. project/ChessBuddy/; fi
           test -f project/ChessBuddy/app/build.gradle
           test -f project/ChessBuddy/scripts/build_stockfish_android.sh
+          test -f project/ChessBuddy/scripts/build_lc0_android.sh
+          test -f project/ChessBuddy/scripts/build_rust_android.sh
+          test -f project/ChessBuddy/scripts/verify_apk.sh
+          grep -m1 versionName project/ChessBuddy/app/build.gradle
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
 
       - uses: android-actions/setup-android@v3
         with:
@@ -64,8 +76,14 @@ jobs:
       - name: Run project tests
         run: node tests/run-all.js
 
-      - name: Build Stockfish for Android arm64
+      - name: Build Stockfish for Android arm64 (preserved)
         run: bash scripts/build_stockfish_android.sh
+
+      - name: Build Lc0 and Maia model manifest for Android arm64
+        run: bash scripts/build_lc0_android.sh
+
+      - name: Build ChessBuddy Rust JNI core for Android arm64
+        run: bash scripts/build_rust_android.sh
 
       - name: Configure personal APK signing
         run: |
@@ -83,7 +101,7 @@ jobs:
       - name: Build release APK
         run: gradle --no-daemon --stacktrace assembleRelease
 
-      - name: Verify APK
+      - name: Verify APK (Stockfish + Lc0 + Maia + Rust)
         run: bash scripts/verify_apk.sh app/build/outputs/apk/release/app-release.apk build-info/VERIFIED_CHECKS.txt
 
       - name: Package APK and matching source archive
@@ -96,6 +114,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/ChessBuddy-v1.0.0-rc1-lc0-patch4-source.zip" "release/${NAME}-source.zip"
           cp build-info/VERIFIED_CHECKS.txt release/VERIFIED_CHECKS.txt
           cp build-info/stockfish.txt release/STOCKFISH_PROVENANCE.txt
+          cp build-info/lc0.txt release/LC0_PROVENANCE.txt
           APK_SHA="$(sha256sum "release/${NAME}-arm64.apk" | cut -d' ' -f1)"
           {
             echo "ChessBuddy ${VER} (build ${GITHUB_RUN_NUMBER})"
@@ -103,10 +122,12 @@ jobs:
             echo "APK: ${NAME}-arm64.apk"
             echo "APK sha256: ${APK_SHA}"
             echo "Source archive: ${NAME}-source.zip"
-            echo "Toolchain: Java 17, Gradle 8.9, NDK ${NDK_VERSION}"
+            echo "Toolchain: Java 17, Gradle 8.9, NDK ${NDK_VERSION}, Rust stable"
             echo "Signing: ephemeral personal sideload key; not for Play Store"
             echo
             cat build-info/stockfish.txt
+            echo
+            cat build-info/lc0.txt
           } > release/BUILD_INFO.txt
           (cd release && sha256sum * > SHA256SUMS.txt)
 
