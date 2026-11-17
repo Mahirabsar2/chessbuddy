@@ -2,7 +2,7 @@ name: Build ChessBuddy APK
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, Mahirabsar2-patch-2]
     paths-ignore:
       - 'PROJECT_STATUS.md'
       - 'PROJECT_LOG.md'
@@ -31,16 +31,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download and extract ChessBuddy v0.4.0 source
+      - name: Extract ChessBuddy 0.5.0 account-auth diagnostics source
         working-directory: .
         run: |
           set -euo pipefail
-          curl -fL https://raw.githubusercontent.com/Mahirabsar2/chessbuddy/main/ChessBuddy-v0.4.0-source.zip -o ChessBuddy-v0.4.0-source.zip
+          ARCHIVE="ChessBuddy-0.5.0-account-auth-diagnostics.zip"
+          test -f "$ARCHIVE"
           mkdir -p project
-          unzip -q ChessBuddy-v0.4.0-source.zip -d project
+          unzip -q "$ARCHIVE" -d project
           test -f project/ChessBuddy/app/build.gradle
           test -f project/ChessBuddy/scripts/build_stockfish_android.sh
-          grep -q "versionName '0.4.0'" project/ChessBuddy/app/build.gradle
+          test -f project/ChessBuddy/tests/run-all.js
+          grep -q "versionName '0.5.0'" project/ChessBuddy/app/build.gradle
+          echo "SOURCE_ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+          sha256sum "$ARCHIVE" | tee source-archive.sha256
+          echo "SOURCE_ARCHIVE_SHA256=$(sha256sum "$ARCHIVE" | cut -d' ' -f1)" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
         with:
@@ -94,7 +99,7 @@ jobs:
           NAME="ChessBuddy-v${VER}-build${GITHUB_RUN_NUMBER}"
           mkdir -p release
           cp app/build/outputs/apk/release/app-release.apk "release/${NAME}-arm64.apk"
-          cp "$GITHUB_WORKSPACE/ChessBuddy-v0.4.0-source.zip" "release/${NAME}-source.zip"
+          cp "$GITHUB_WORKSPACE/ChessBuddy-0.5.0-account-auth-diagnostics.zip" "release/${NAME}-source.zip"
           cp build-info/VERIFIED_CHECKS.txt release/VERIFIED_CHECKS.txt
           cp build-info/stockfish.txt release/STOCKFISH_PROVENANCE.txt
           APK_SHA="$(sha256sum "release/${NAME}-arm64.apk" | cut -d' ' -f1)"
@@ -104,6 +109,7 @@ jobs:
             echo "APK: ${NAME}-arm64.apk"
             echo "APK sha256: ${APK_SHA}"
             echo "Source archive: ${NAME}-source.zip"
+            echo "Source archive sha256: ${SOURCE_ARCHIVE_SHA256}"
             echo "Toolchain: Java 17, Gradle 8.9, NDK ${NDK_VERSION}"
             echo "Signing: ephemeral personal sideload key; not for Play Store"
             echo
