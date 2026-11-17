@@ -2,7 +2,7 @@ name: Build ChessBuddy APK
 
 on:
   push:
-    branches: [main, master]
+    branches: [Mahirabsar2-patch-4]
     paths-ignore:
       - 'PROJECT_STATUS.md'
       - 'PROJECT_LOG.md'
@@ -31,16 +31,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download and extract ChessBuddy v0.4.0 source
+      - name: Extract ChessBuddy v1.0.0-rc1 source from patch 4
         working-directory: .
         run: |
           set -euo pipefail
-          curl -fL https://raw.githubusercontent.com/Mahirabsar2/chessbuddy/main/ChessBuddy-v0.4.0-source.zip -o ChessBuddy-v0.4.0-source.zip
+          test -f ChessBuddy-v1.0.0-rc1-source.zip
+          cp ChessBuddy-v1.0.0-rc1-source.zip "$GITHUB_WORKSPACE/ChessBuddy-v1.0.0-rc1-source.zip"
           mkdir -p project
-          unzip -q ChessBuddy-v0.4.0-source.zip -d project
+          unzip -q ChessBuddy-v1.0.0-rc1-source.zip -d project
           test -f project/ChessBuddy/app/build.gradle
           test -f project/ChessBuddy/scripts/build_stockfish_android.sh
-          grep -q "versionName '0.4.0'" project/ChessBuddy/app/build.gradle
+          grep -q "versionName '1.0.0-rc1'" project/ChessBuddy/app/build.gradle
 
       - uses: actions/setup-java@v4
         with:
@@ -94,7 +95,7 @@ jobs:
           NAME="ChessBuddy-v${VER}-build${GITHUB_RUN_NUMBER}"
           mkdir -p release
           cp app/build/outputs/apk/release/app-release.apk "release/${NAME}-arm64.apk"
-          cp "$GITHUB_WORKSPACE/ChessBuddy-v0.4.0-source.zip" "release/${NAME}-source.zip"
+          cp "$GITHUB_WORKSPACE/ChessBuddy-v1.0.0-rc1-source.zip" "release/${NAME}-source.zip"
           cp build-info/VERIFIED_CHECKS.txt release/VERIFIED_CHECKS.txt
           cp build-info/stockfish.txt release/STOCKFISH_PROVENANCE.txt
           APK_SHA="$(sha256sum "release/${NAME}-arm64.apk" | cut -d' ' -f1)"
