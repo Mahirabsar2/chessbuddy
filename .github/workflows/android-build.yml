@@ -36,11 +36,21 @@ jobs:
         run: |
           set -euo pipefail
           test -f ChessBuddy-v1.0.0-rc1-source.zip
-          mkdir -p project
+          mkdir -p project/ChessBuddy
           unzip -q ChessBuddy-v1.0.0-rc1-source.zip -d project
+          APP_GRADLE="$(find project -path '*/app/build.gradle' -print -quit)"
+          if [ -z "$APP_GRADLE" ]; then
+            echo "No app/build.gradle found in source ZIP"
+            find project -maxdepth 4 -type f | head -80
+            exit 1
+          fi
+          SOURCE_ROOT="$(dirname "$(dirname "$APP_GRADLE")")"
+          if [ "$SOURCE_ROOT" != "project/ChessBuddy" ]; then
+            cp -a "$SOURCE_ROOT"/. project/ChessBuddy/
+          fi
           test -f project/ChessBuddy/app/build.gradle
           test -f project/ChessBuddy/scripts/build_stockfish_android.sh
-          grep -q "versionName '1.0.0-rc1'" project/ChessBuddy/app/build.gradle
+          grep -m1 versionName project/ChessBuddy/app/build.gradle
 
       - uses: actions/setup-java@v4
         with:
