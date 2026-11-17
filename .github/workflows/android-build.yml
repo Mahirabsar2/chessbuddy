@@ -31,11 +31,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download and extract ChessBuddy v0.4.0 source
+      - name: Download and extract Patch 5 LC0 source
         working-directory: .
         run: |
           set -euo pipefail
-          curl -fL https://raw.githubusercontent.com/Mahirabsar2/chessbuddy/main/ChessBuddy-v1.0.0-rc1-lc0-patch4-source.zip -o ChessBuddy-v1.0.0-rc1-lc0-patch4-source.zip
+          curl -fL https://raw.githubusercontent.com/Mahirabsar2/chessbuddy/Mahirabsar2-patch-5/ChessBuddy-v1.0.0-rc1-lc0-patch4-source.zip -o ChessBuddy-v1.0.0-rc1-lc0-patch4-source.zip
           mkdir -p project
           unzip -q ChessBuddy-v1.0.0-rc1-lc0-patch4-source.zip -d project
           test -f project/ChessBuddy/app/build.gradle
