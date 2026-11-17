@@ -2,7 +2,7 @@ name: Build ChessBuddy 0.5.0 APK
 
 on:
   push:
-    branches: [chessbuddy-0.5.0-dev]
+    branches: [chessbuddy-0.5.0-dev, chessbuddy-0.5.0-server-validation-dev-v2]
   workflow_dispatch:
 
 permissions:
