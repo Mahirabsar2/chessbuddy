@@ -21,22 +21,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract and patch the uploaded 0.5.0 source
+      - name: Extract the uploaded server-validation source ZIP
         working-directory: .
         run: |
           set -euo pipefail
-          test -f ChessBuddy-v0.5.0-source.zip
-          ls overlays/ChessBuddy-v0.5.0-patch-*.b64 >/dev/null
-          cat overlays/ChessBuddy-v0.5.0-patch-*.b64 | base64 -d | gzip -d > "$RUNNER_TEMP/chessbuddy-0.5.0.patch"
+          ARCHIVE="ChessBuddy-0.5.0-server-validation-dev-v2.zip"
+          test -f "$ARCHIVE"
           mkdir -p project
-          unzip -q ChessBuddy-v0.5.0-source.zip -d project
-          patch --batch -p1 -d project < "$RUNNER_TEMP/chessbuddy-0.5.0.patch"
-          patch --batch -p1 -d project < overlays/perft-fast.patch
-          rm -f project/ChessBuddy/app/sideload.keystore
+          unzip -q "$ARCHIVE" -d project
           test -f project/ChessBuddy/app/build.gradle
           test -f project/ChessBuddy/app/src/main/assets/js/online.js
           grep -q "versionName '0.5.0'" project/ChessBuddy/app/build.gradle
-
+          test -f project/ChessBuddy/tests/logic/online-server-validation.test.js
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
