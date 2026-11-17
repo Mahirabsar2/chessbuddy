@@ -36,7 +36,6 @@ jobs:
         run: |
           set -euo pipefail
           test -f ChessBuddy-v1.0.0-rc1-source.zip
-          cp ChessBuddy-v1.0.0-rc1-source.zip "$GITHUB_WORKSPACE/ChessBuddy-v1.0.0-rc1-source.zip"
           mkdir -p project
           unzip -q ChessBuddy-v1.0.0-rc1-source.zip -d project
           test -f project/ChessBuddy/app/build.gradle
