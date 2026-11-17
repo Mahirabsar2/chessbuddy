@@ -52,6 +52,71 @@ jobs:
           grep -m1 versionName project/ChessBuddy/app/build.gradle
           echo "Source root: $SOURCE_ROOT"
 
+      - name: Verify Maia provider integration and fix verifier quoting
+        working-directory: .
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, zipfile, os
+
+          root = Path("project/ChessBuddy")
+          strength = (root / "app/src/main/assets/js/strength.js").read_text()
+          app = (root / "app/src/main/assets/js/app.js").read_text()
+          native = (root / "app/src/main/java/com/chessbuddy/NativeBridge.java").read_text()
+
+          checks = {
+              "Maia roster assigns the LC0 provider": re.search(r"MAIA\\.forEach\\(function \\(b\\) \\{ b\\.engine = ['\\"]lc0['\\"];", strength),
+              "Maia bots are included in the selectable roster": "BOTS = BOTS.concat(GM, LEGENDS, CHARACTERS, GENERATED, VIS, MAIA);" in strength,
+              "game flow selects the bot's engine provider": "engine.useProvider(p.engine || 'stockfish', p.modelId || '')" in app,
+              "game flow supplies the verified Maia weights": "Native.maiaModelPath(p.modelId)" in app and "WeightsFile" in app,
+              "native bridge starts the selected provider": "engineStart(String provider, String modelId)" in native and 'path = lc0Path(); name = "Lc0 / " + selectedModel;' in native,
+              "native bridge configures Maia policyhead": "--search-algorithm=policyhead" in native and "--backend=blas" in native,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          for name, ok in checks.items():
+              print(("PASS " if ok else "FAIL ") + name)
+          if failed:
+              raise SystemExit("Maia provider integration is incomplete: " + "; ".join(failed))
+
+          verifier_path = root / "scripts/verify_apk.sh"
+          verifier = verifier_path.read_text()
+          old_check = """grep -q '\\"lc0\\"' app/src/main/assets/js/strength.js || fail "Maia bot roster is not wired to the Lc0 provider" """
+          if old_check not in verifier:
+              # Match the exact line independent of trailing whitespace.
+              lines = verifier.splitlines()
+              matches = [i for i, line in enumerate(lines) if 'Maia bot roster is not wired to the Lc0 provider' in line]
+              if len(matches) != 1:
+                  raise SystemExit("Could not safely locate the old Maia roster verifier check")
+              lines[matches[0]] = """grep -Fq "b.engine = 'lc0'" app/src/main/assets/js/strength.js || fail "Maia bot roster is not wired to the Lc0 provider" """
+              verifier = "\\n".join(lines) + "\\n"
+          else:
+              verifier = verifier.replace(old_check, """grep -Fq "b.engine = 'lc0'" app/src/main/assets/js/strength.js || fail "Maia bot roster is not wired to the Lc0 provider" """)
+          verifier_path.write_text(verifier)
+          PY
+
+          bash -n scripts/verify_apk.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, zipfile
+          archive = Path(os.environ["GITHUB_WORKSPACE"]) / "ChessBuddy-v1.0.0-rc1-lc0-patch5-rustfix-source-1.zip"
+          replacement = Path("project/ChessBuddy/scripts/verify_apk.sh").read_bytes()
+          target = "ChessBuddy/scripts/verify_apk.sh"
+          tmp = archive.with_suffix(".fixed.zip")
+          with zipfile.ZipFile(archive, "r") as src, zipfile.ZipFile(tmp, "w") as dst:
+              names = [i.filename for i in src.infolist()]
+              if names.count(target) != 1:
+                  raise SystemExit(f"Expected exactly one {target} entry in source ZIP")
+              for info in src.infolist():
+                  data = replacement if info.filename == target else src.read(info.filename)
+                  dst.writestr(info, data, compress_type=info.compress_type)
+          tmp.replace(archive)
+          with zipfile.ZipFile(archive) as check:
+              assert check.testzip() is None
+              assert b"b.engine = 'lc0'" in check.read(target)
+          print("PASS source archive updated with corrected Maia verifier")
+          PY
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
