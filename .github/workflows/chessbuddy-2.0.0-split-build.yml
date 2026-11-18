@@ -7,7 +7,6 @@ on:
       - chessbuddy-2.0.0-rebuild
     paths:
       - 'source-parts/**'
-      - '.github/workflows/chessbuddy-2.0.0-split-build.yml'
 
 permissions:
   contents: read
