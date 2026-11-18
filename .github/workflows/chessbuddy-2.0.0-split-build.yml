@@ -68,12 +68,33 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build Android debug APK
-        run: gradle --no-daemon assembleDebug
+      - name: Build Android release APK
+        run: gradle --no-daemon assembleRelease
 
-      - name: Upload APK
+      - name: Align and sign release APK for device testing
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)"
+          UNSIGNED_APK="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n1)"
+          test -n "$UNSIGNED_APK" && test -s "$UNSIGNED_APK"
+          keytool -genkeypair -noprompt \
+            -keystore "$RUNNER_TEMP/chessbuddy-test-release.jks" \
+            -storepass changeit -keypass changeit \
+            -alias chessbuddy-test -keyalg RSA -keysize 2048 -validity 3650 \
+            -dname "CN=ChessBuddy CI Test, OU=Build, O=ChessBuddy, C=US"
+          zipalign -f -p 4 "$UNSIGNED_APK" "$RUNNER_TEMP/chessbuddy-release-aligned.apk"
+          apksigner sign \
+            --ks "$RUNNER_TEMP/chessbuddy-test-release.jks" \
+            --ks-key-alias chessbuddy-test \
+            --ks-pass pass:changeit --key-pass pass:changeit \
+            --out "$RUNNER_TEMP/ChessBuddy-2.0.0-release.apk" \
+            "$RUNNER_TEMP/chessbuddy-release-aligned.apk"
+          apksigner verify --verbose "$RUNNER_TEMP/ChessBuddy-2.0.0-release.apk"
+
+      - name: Upload signed release APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChessBuddy-2.0.0-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: ChessBuddy-2.0.0-release-apk
+          path: ${{ runner.temp }}/ChessBuddy-2.0.0-release.apk
           if-no-files-found: error
