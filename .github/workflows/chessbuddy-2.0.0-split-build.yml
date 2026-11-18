@@ -68,6 +68,16 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Inspect release signing configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Release signing references:"
+          while IFS= read -r file; do
+            echo "---- $file"
+            grep -n -A18 -B4 -E 'signingConfigs|sideload|chessbuddy\.keystore|storePassword|keyAlias|keyPassword' "$file" || true
+          done < <(find app -maxdepth 3 -type f \( -name '*.gradle' -o -name '*.gradle.kts' \))
+
       - name: Build Android release APK
         run: gradle --no-daemon assembleRelease
 
