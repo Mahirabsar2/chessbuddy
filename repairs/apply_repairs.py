@@ -181,8 +181,8 @@ test('presence is blocked until a verified authenticated user session exists', a
 """)
 ])
 edit("tests/ui/ui.test.js", [
-("'Personalities', 'Characters', 'Visualization', 'Maia'",
- "'Personalities', 'Characters', 'Visualization', 'Chess Personalities', 'Maia'")
+("'Personalities', 'Visualization', 'Maia'",
+ "'Personalities', 'Chess Personalities', 'Visualization', 'Maia'")
 ])
 
 print("ChessBuddy repair overlay applied.")
