@@ -2,6 +2,12 @@ name: ChessBuddy 2.0.0 split-source Android build
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - chessbuddy-2.0.0-rebuild
+    paths:
+      - 'source-parts/**'
+      - '.github/workflows/chessbuddy-2.0.0-split-build.yml'
 
 permissions:
   contents: read
@@ -40,17 +46,17 @@ jobs:
         with:
           node-version: 22
 
-      - name: Run JavaScript tests
-        run: node tests/run-all.js
-
-      - name: Run Java policy tests
-        run: bash tests/java/run.sh
-
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Run JavaScript tests
+        run: node tests/run-all.js
+
+      - name: Run Java policy tests
+        run: bash tests/java/run.sh
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
