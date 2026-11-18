@@ -13,6 +13,7 @@ on:
       - 'ChessBuddy-2.0.0-Part5-Source.zip'
       - '.github/workflows/chessbuddy-2.0.0-split-build.yml'
       - 'scripts/reassemble_stockfish.sh'
+      - 'repairs/**'
 
 permissions:
   contents: read
