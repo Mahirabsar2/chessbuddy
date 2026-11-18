@@ -10,7 +10,7 @@
 
 ## Current repository state
 - Repository: `Mahirabsar2/chessbuddy`.
-- `main` HEAD: `a8741119c5279b3250f4cbff17f8768abc3b7e39` (2026-11-18 11:51:08 UTC).
+- `main` source baseline at the start of this review: `a8741119c5279b3250f4cbff17f8768abc3b7e39` (2026-11-18 11:51:08 UTC); this review then added documentation-only commits.
 - Latest main commit adds `ChessBuddy-2.0.0-Part1-Stockfish.zip` (Git blob `a19fd393abf12a604b5d0b18413d538182015c95`). The GitHub file fetch returned an empty binary payload; archive contents, size and internal version are not verified. No complete 2.0.0 source ZIP or matching APK is verified.
 - Latest inspectable complete candidate is on `Mahirabsar2-patch-7`, HEAD `05afe3caac9bcf3cdf98bea6ddd330039af4aa6c`: `ChessBuddy-v1.0.0-rc1-lc0-patch5-rustfix-source-1.zip` (319,941 bytes, 205 entries; Git blob `a8a6531092423451136cec244903b8d5aecb6cd1`). It contains the Android app tree, tests, Rust core, Stockfish/Lc0 build scripts and Supabase functions. The internal Gradle version has not been independently read; the workflow prints but does not assert the expected version.
 - The patch-7 workflow includes Node logic tests, Maia static integration checks, shell syntax validation, Stockfish/Lc0/Rust builds, Gradle/APK verification and packaging of the same source archive with provenance/checksums. It omits Playwright UI, Java policy and Deno suites, uses ephemeral signing, and has no verified successful Actions result in this review.
