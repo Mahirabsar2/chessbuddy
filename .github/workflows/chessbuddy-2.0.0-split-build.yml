@@ -83,14 +83,14 @@ jobs:
             -storepass changeit -keypass changeit \
             -alias chessbuddy-test -keyalg RSA -keysize 2048 -validity 3650 \
             -dname "CN=ChessBuddy CI Test, OU=Build, O=ChessBuddy, C=US"
-          zipalign -f -p 4 "$UNSIGNED_APK" "$RUNNER_TEMP/chessbuddy-release-aligned.apk"
-          apksigner sign \
+          "$BUILD_TOOLS/zipalign" -f -p 4 "$UNSIGNED_APK" "$RUNNER_TEMP/chessbuddy-release-aligned.apk"
+          "$BUILD_TOOLS/apksigner" sign \
             --ks "$RUNNER_TEMP/chessbuddy-test-release.jks" \
             --ks-key-alias chessbuddy-test \
             --ks-pass pass:changeit --key-pass pass:changeit \
             --out "$RUNNER_TEMP/ChessBuddy-2.0.0-release.apk" \
             "$RUNNER_TEMP/chessbuddy-release-aligned.apk"
-          apksigner verify --verbose "$RUNNER_TEMP/ChessBuddy-2.0.0-release.apk"
+          "$BUILD_TOOLS/apksigner" verify --verbose "$RUNNER_TEMP/ChessBuddy-2.0.0-release.apk"
 
       - name: Upload signed release APK
         uses: actions/upload-artifact@v4
