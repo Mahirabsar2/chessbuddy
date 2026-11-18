@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PARTS_DIR="${1:-source-parts}"
+DEST="app/src/main/jniLibs/arm64-v8a/libstockfish.so"
+TMP="$(mktemp)"
+trap 'rm -f "$TMP"' EXIT
+
+for part in 01 02 03 04; do
+  archive=""
+  case "$part" in
+    01) archive="$PARTS_DIR/ChessBuddy-2.0.0-Part1-Stockfish.zip" ;;
+    02) archive="$PARTS_DIR/ChessBuddy-2.0.0-Part2-Stockfish.zip" ;;
+    03) archive="$PARTS_DIR/ChessBuddy-2.0.0-Part3-Stockfish.zip" ;;
+    04) archive="$PARTS_DIR/ChessBuddy-2.0.0-Part4-Stockfish.zip" ;;
+  esac
+  test -s "$archive"
+  unzip -p "$archive" "engine-parts/libstockfish.so.part$part" >> "$TMP"
+done
+
+EXPECTED="$(awk '$2=="app/src/main/jniLibs/arm64-v8a/libstockfish.so" {print $1}' build-info/SHA256SUMS.txt)"
+test -n "$EXPECTED" || { echo "Stockfish SHA-256 missing from manifest"; exit 1; }
+ACTUAL="$(sha256sum "$TMP" | awk '{print $1}')"
+test "$ACTUAL" = "$EXPECTED" || { echo "Stockfish SHA-256 mismatch: $ACTUAL"; exit 1; }
+mkdir -p "$(dirname "$DEST")"
+install -m 0755 "$TMP" "$DEST"
+echo "Reassembled Stockfish: $ACTUAL"
