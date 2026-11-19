@@ -186,3 +186,222 @@ edit("tests/ui/ui.test.js", [
 ])
 
 print("ChessBuddy repair overlay applied.")
+
+
+
+
+# Online-play hardening: server move endpoint, authoritative clocks and polling.
+def edit_online(path, replacements):
+    from pathlib import Path
+    p = Path(path)
+    content = p.read_text(encoding="utf-8")
+    for old, new in replacements:
+        if old not in content:
+            raise SystemExit("Online-play patch could not find expected source in " + path + ": " + old[:100].replace("\n", "\\n"))
+        content = content.replace(old, new, 1)
+    p.write_text(content, encoding="utf-8")
+
+edit_online("app/src/main/assets/js/clock.js", [
+("""  Clock.restore = function (s) {
+    var c = new Clock(byId(s.id), s);
+    c.running = s.running === 'w' || s.running === 'b' ? s.running : (c.moves >= 1 ? (c.moves % 2 === 1 ? 'b' : 'w') : 'w');
+    return c;
+  };""",
+"""  Clock.restore = function (s) {
+    var c = new Clock(byId(s.id), s);
+    // Explicit null means an online game is waiting for White's opening move.
+    if (s && Object.prototype.hasOwnProperty.call(s, 'running')) {
+      c.running = s.running === 'w' || s.running === 'b' ? s.running : null;
+    } else {
+      c.running = c.moves >= 1 ? (c.moves % 2 === 1 ? 'b' : 'w') : 'w';
+    }
+    return c;
+  };""")
+])
+
+edit_online("app/src/main/assets/js/app.js", [
+("""    try {
+      await Online.applyMove({ id: online.id, fen: game.fen(), pgn: game.pgn(), whiteMs: c.w, blackMs: c.b,
+        finished: !!over, result: over ? resultCode() : null, winner: over && over.winner ? (over.winner === online.myColor ? Online.user().id : online.opponentId) : null });
+      online.saving = false; online.lastUpdated = new Date().toISOString(); saveCurrent(); renderControls(); renderStatus();
+    } catch (e) { online.saving = false; online.syncError = true; renderControls(); setStatus('Move not synced. Reopen the game from the online list to reload the server position. ' + e.message, 'bad'); throw e; }
+""",
+"""    try {
+      const saved = await Online.applyMove({ id: online.id, fen: game.fen(), pgn: game.pgn(), whiteMs: c.w, blackMs: c.b,
+        finished: !!over, result: over ? resultCode() : null, winner: over && over.winner ? (over.winner === online.myColor ? Online.user().id : online.opponentId) : null });
+      const serverGame = saved && saved.game;
+      if (serverGame && ctx.clock) {
+        ctx.clock = Clock.restore({ id: serverGame.time_control || online.timeControl,
+          w: Number(serverGame.white_ms) || 0, b: Number(serverGame.black_ms) || 0,
+          moves: game.history().length, running: game.history().length ? serverGame.turn_color : null });
+        if (ctx.clock.running && serverGame.updated_at) {
+          const elapsed = Math.max(0, Date.now() - new Date(serverGame.updated_at).getTime());
+          ctx.clock.t[ctx.clock.running] = Math.max(0, ctx.clock.t[ctx.clock.running] - elapsed);
+          ctx.clock.last = performance.now();
+        }
+      }
+      online.saving = false; online.lastUpdated = serverGame && serverGame.updated_at || new Date().toISOString();
+      saveCurrent(); renderControls(); renderClocks(); renderStatus();
+    } catch (e) { online.saving = false; online.syncError = true; renderControls(); setStatus('Move not synced. Reopen the game from the online list to reload the server position. ' + e.message, 'bad'); throw e; }
+"""),
+("""  async function pollOnlineGame() {
+    if (!ctx.online || ctx.online.polling || ctx.online.saving) return;
+    ctx.online.polling = true;
+    try {
+      const row = await Online.game(ctx.online.id); if (!row) return;
+      if (row.pgn && row.pgn !== game.pgn()) {
+""",
+"""  async function pollOnlineGame() {
+    if (!ctx.online || ctx.online.polling || ctx.online.saving) return;
+    ctx.online.polling = true;
+    try {
+      const row = await Online.game(ctx.online.id); if (!row) return;
+      const previousUpdatedAt = ctx.online.lastUpdated;
+      if (row.pgn && row.pgn !== game.pgn()) {
+"""),
+("""        over = computeOver(); sel = null; legalMap = {}; capMap = {}; viewPly = null; saveCurrent(); render();
+      } else if (ctx.clock && row.updated_at && row.updated_at !== ctx.online.lastUpdated) {
+        ctx.clock = Clock.restore({ id: row.time_control, w: Number(row.white_ms) || 0, b: Number(row.black_ms) || 0, moves: game.history().length, running: game.history().length ? row.turn_color : null });
+        if (ctx.clock && ctx.clock.running) { const e = Math.max(0, Date.now() - new Date(row.updated_at).getTime()); ctx.clock.t[ctx.clock.running] = Math.max(0, ctx.clock.t[ctx.clock.running] - e); ctx.clock.last = performance.now(); }
+        ctx.online.lastUpdated = row.updated_at; renderClocks();
+      }
+""",
+"""        over = computeOver(); sel = null; legalMap = {}; capMap = {}; viewPly = null; saveCurrent(); render();
+        ctx.online.lastUpdated = row.updated_at || ctx.online.lastUpdated;
+      } else if (ctx.clock && row.updated_at && row.updated_at !== previousUpdatedAt) {
+        ctx.clock = Clock.restore({ id: row.time_control, w: Number(row.white_ms) || 0, b: Number(row.black_ms) || 0, moves: game.history().length, running: game.history().length ? row.turn_color : null });
+        if (ctx.clock && ctx.clock.running) { const e = Math.max(0, Date.now() - new Date(row.updated_at).getTime()); ctx.clock.t[ctx.clock.running] = Math.max(0, ctx.clock.t[ctx.clock.running] - e); ctx.clock.last = performance.now(); }
+        ctx.online.lastUpdated = row.updated_at; renderClocks();
+      } else if (row.updated_at) {
+        ctx.online.lastUpdated = row.updated_at;
+      }
+""")
+])
+
+edit_online("supabase/functions/_shared/online-validation.mjs", [
+("    const elapsed = Math.max(0, nowMs - updatedAt);",
+ "    // White's opening move starts Black's clock; challenge waiting time is uncharged.\n    const elapsed = game.pgn ? Math.max(0, nowMs - updatedAt) : 0;")
+])
+
+edit_online("supabase/operations/validated_online_moves.sql", [
+("-- DRAFT ONLY — do not apply until the apply-online-move Edge Function is deployed and tested.\n-- The app must stop calling cb_apply_move directly before this is enabled.",
+ "-- Apply alongside the apply-online-move Edge Function. The Android app calls the\n-- Edge Function; direct client writes to cb_apply_move are disabled."),
+("    v_elapsed_ms := greatest(0, floor(extract(epoch from (v_now - g.updated_at)) * 1000)::bigint);",
+ "    -- Do not charge White for time spent waiting for the opening move.\n    v_elapsed_ms := case when coalesce(g.pgn, '') = '' then 0\n      else greatest(0, floor(extract(epoch from (v_now - g.updated_at)) * 1000)::bigint) end;"),
+("if p_next_turn_color is distinct from case when g.turn_color = 'w' then 'b' else 'w' end then",
+ "if p_next_turn_color is distinct from (case when g.turn_color = 'w' then 'b' else 'w' end) then"),
+("if p_next_turn_user is distinct from case when g.turn_color = 'w' then g.black_user_id else g.white_user_id end then",
+ "if p_next_turn_user is distinct from (case when g.turn_color = 'w' then g.black_user_id else g.white_user_id end) then")
+])
+
+edit_online("tests/logic/coaches-clock.test.js", [
+("test('clock: an expired side cannot receive increment or hand the clock to the opponent', () => {",
+"""test('online clock: an explicit null stays stopped until White makes the first move', () => {
+  const c = C.restore({ id: '3+2', w: 180000, b: 180000, moves: 0, running: null });
+  assert.strictEqual(c.running, null);
+  assert.strictEqual(c.t.w, 180000);
+  c.onMove('w', 5000);
+  assert.strictEqual(c.t.w, 182000);
+  assert.strictEqual(c.running, 'b');
+  assert.strictEqual(c.moves, 1);
+});
+test('clock: an expired side cannot receive increment or hand the clock to the opponent', () => {""")
+])
+
+edit_online("tests/logic/online-validation.test.js", [
+("""  const expired = game(); expired.updated_at = new Date(now - 181000).toISOString();
+  assert.strictEqual(validateOnlineMove(Chess, expired, payload('e4'), 'white-user', now).status, 409);
+""",
+"""  const expired = game();
+  const first = new Chess(); first.move('e4');
+  expired.current_fen = first.fen(); expired.pgn = first.pgn();
+  expired.turn_user_id = 'black-user'; expired.turn_color = 'b';
+  expired.white_ms = 182000; expired.updated_at = new Date(now - 181000).toISOString();
+  const second = new Chess(); second.move('e4'); second.move('e5');
+  const afterOpening = { game_id: expired.id, p_next_fen: second.fen(), p_pgn: second.pgn(), p_white_ms: 182000, p_black_ms: 0 };
+  assert.strictEqual(validateOnlineMove(Chess, expired, afterOpening, 'black-user', now).status, 409);
+"""),
+("done('online move validation');",
+"""test('does not charge White while a new challenge waits for the opening move', async () => {
+  const { validateOnlineMove } = await validation;
+  const waiting = game(); waiting.updated_at = new Date(now - 240000).toISOString();
+  const r = validateOnlineMove(Chess, waiting, payload('e4'), 'white-user', now);
+  assert.strictEqual(r.ok, true);
+  assert.strictEqual(r.update.white_ms, 182000);
+  assert.strictEqual(r.update.black_ms, 180000);
+});
+
+test('charges the active side after the opening move and applies increment', async () => {
+  const { validateOnlineMove } = await validation;
+  const g = game(); const first = new Chess(); first.move('e4');
+  g.current_fen = first.fen(); g.pgn = first.pgn();
+  g.turn_user_id = 'black-user'; g.turn_color = 'b';
+  g.white_ms = 182000; g.updated_at = new Date(now - 5000).toISOString();
+  const second = new Chess(); second.move('e4'); second.move('e5');
+  const p = { game_id: g.id, p_next_fen: second.fen(), p_pgn: second.pgn(), p_white_ms: 182000, p_black_ms: 177000 };
+  const r = validateOnlineMove(Chess, g, p, 'black-user', now);
+  assert.strictEqual(r.ok, true);
+  assert.strictEqual(r.update.black_ms, 177000);
+  assert.strictEqual(r.update.white_ms, 182000);
+});
+
+done('online move validation');""")
+])
+
+edit_online("supabase/functions/_shared/online-validation.test.ts", [
+("""Deno.test("rejects stale state and expired clocks", () => {
+  const g = game(); g.updated_at = new Date(now - 181000).toISOString();
+  const expired = validateOnlineMove(Chess, g, payloadFor("e4"), "white-user", now);
+  if (expired.ok || expired.status !== 409) throw new Error("expired clock was accepted");
+  g.updated_at = new Date(now).toISOString(); g.current_fen = "invalid";
+  const stale = validateOnlineMove(Chess, g, payloadFor("e4"), "white-user", now);
+  if (stale.ok || stale.status !== 409) throw new Error("stale state was accepted");
+});
+""",
+"""Deno.test("does not charge White while a new challenge waits for the opening move", () => {
+  const g = game(); g.updated_at = new Date(now - 240000).toISOString();
+  const r = validateOnlineMove(Chess, g, payloadFor("e4"), "white-user", now);
+  if (!r.ok || r.update.white_ms !== 182000 || r.update.black_ms !== 180000) throw new Error("opening clock was charged before White moved");
+});
+
+Deno.test("charges the active side after the opening move and applies increment", () => {
+  const g = game(); const first = new Chess(); first.move("e4");
+  g.current_fen = first.fen(); g.pgn = first.pgn(); g.turn_user_id = "black-user"; g.turn_color = "b";
+  g.white_ms = 182000; g.updated_at = new Date(now - 5000).toISOString();
+  const second = new Chess(); second.move("e4"); second.move("e5");
+  const payload = { game_id: g.id, p_next_fen: second.fen(), p_pgn: second.pgn(), p_white_ms: 182000, p_black_ms: 177000 };
+  const r = validateOnlineMove(Chess, g, payload, "black-user", now);
+  if (!r.ok || r.update.black_ms !== 177000 || r.update.white_ms !== 182000) throw new Error("active side clock/increment was incorrect");
+});
+
+Deno.test("rejects stale state and expired clocks after White has started the game", () => {
+  const g = game(); const first = new Chess(); first.move("e4");
+  g.current_fen = first.fen(); g.pgn = first.pgn(); g.turn_user_id = "black-user"; g.turn_color = "b";
+  g.white_ms = 182000; g.updated_at = new Date(now - 181000).toISOString();
+  const second = new Chess(); second.move("e4"); second.move("e5");
+  const payload = { game_id: g.id, p_next_fen: second.fen(), p_pgn: second.pgn(), p_white_ms: 182000, p_black_ms: 0 };
+  const expired = validateOnlineMove(Chess, g, payload, "black-user", now);
+  if (expired.ok || expired.status !== 409) throw new Error("expired clock was accepted");
+  g.updated_at = new Date(now).toISOString(); g.current_fen = "invalid";
+  const stale = validateOnlineMove(Chess, g, payload, "black-user", now);
+  if (stale.ok || stale.status !== 409) throw new Error("stale state was accepted");
+});
+""")
+])
+
+# Preserve the deployed database operations and applied trigger permission fix in migration source.
+from pathlib import Path as _Path
+_migrations = _Path("supabase/migrations")
+_migrations.mkdir(parents=True, exist_ok=True)
+(_migrations / "20261119125000_online_move_server_rpc_and_opening_clock.sql").write_text(
+    _Path("supabase/operations/validated_online_moves.sql").read_text(encoding="utf-8"), encoding="utf-8")
+(_migrations / "20261119132059_secure_chessbuddy_signup_trigger_rpc.sql").write_text(
+    "revoke all on function public.handle_new_chessbuddy_user() from public, anon, authenticated;\n", encoding="utf-8")
+
+edit_online("docs/ONLINE_PLAY_STATUS.md", [
+("## Online move validation: pending deployment", "## Online move validation: deployed; device verification pending"),
+("**Both are source only and have not been deployed to the live Supabase project.** Online moves are not yet production-ready or anti-cheat-certified. Deploy/review the SQL and Edge Function together, then perform two-account/two-device tests before enabling public multiplayer use.",
+ "**The apply-online-move Edge Function and cb_apply_validated_move database RPC are deployed to the live Supabase project.** The endpoint requires a signed-in user, verifies each legal move on the server, and commits through a service-role-only transaction. Opening-clock timing is aligned. A full two-account/two-device playthrough is still required before calling online play production-ready or anti-cheat-certified.")
+])
+
+print("Online-play fixes applied.")
