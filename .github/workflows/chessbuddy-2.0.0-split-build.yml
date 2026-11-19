@@ -6,7 +6,7 @@ on:
     branches:
       - chessbuddy-3.0.0
     paths:
-      - 'ChessBuddy-3.0.0-Part1-Stockfish.zip'
+      - 'ChessBuddy-2.0.0-Part1-Stockfish.zip'
       - 'ChessBuddy-2.0.0-Part2-Stockfish.zip'
       - 'ChessBuddy-2.0.0-Part3-Stockfish.zip'
       - 'ChessBuddy-2.0.0-Part4-Stockfish.zip'
@@ -25,7 +25,7 @@ jobs:
       - name: Check out split-source branch
         uses: actions/checkout@v4
         with:
-          ref: chessbuddy-2.0.0-rebuild
+          ref: chessbuddy-3.0.0
 
       - name: Verify all five source ZIPs
         shell: bash
@@ -64,7 +64,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ChessBuddy-3.0.0-extracted-source
-          path: ${{ runner.temp }}/chessbuddy-2.0.0-source.tar.gz
+          path: ${{ runner.temp }}/chessbuddy-3.0.0-source.tar.gz
           if-no-files-found: error
 
       - name: Set up Node.js
@@ -123,5 +123,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ChessBuddy-3.0.0-release-apk
-          path: ${{ runner.temp }}/ChessBuddy-2.0.0-release.apk
+          path: ${{ runner.temp }}/ChessBuddy-3.0.0-release.apk
           if-no-files-found: error
