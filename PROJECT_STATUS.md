@@ -1,43 +1,53 @@
-# ChessBuddy project status — reviewed 2026-11-18
+# ChessBuddy project status — reviewed 2026-11-19
 
 ## Required product scope
 - Fresh Android chess app powered by native Stockfish.
 - Play, Coach, Archive/History and Settings tabs; polished Chess.com-inspired board and pieces.
 - Human-vs-AI and AI-vs-AI.
 - Reliable piece selection and legal moves, including captures, castling, en passant, promotion and undo.
-- GPT/OpenAI and Claude API-key settings with secure Android Keystore storage.
-- Every release includes the exact source ZIP used for its APK, build provenance and SHA-256 checksums.
+- GPT/OpenAI-compatible and Claude provider/API-key settings with secure Android Keystore storage.
+- Every release must include the exact source ZIP used for its APK in the same artifact, with build provenance and SHA-256 checksums.
 
-## Current repository state
-- Repository: `Mahirabsar2/chessbuddy`.
-- `main` source baseline at the start of this review: `a8741119c5279b3250f4cbff17f8768abc3b7e39` (2026-11-18 11:51:08 UTC); this review then added documentation-only commits.
-- Latest main commit adds `ChessBuddy-2.0.0-Part1-Stockfish.zip` (Git blob `a19fd393abf12a604b5d0b18413d538182015c95`). The GitHub file fetch returned an empty binary payload; archive contents, size and internal version are not verified. No complete 2.0.0 source ZIP or matching APK is verified.
-- Latest inspectable complete candidate is on `Mahirabsar2-patch-7`, HEAD `05afe3caac9bcf3cdf98bea6ddd330039af4aa6c`: `ChessBuddy-v1.0.0-rc1-lc0-patch5-rustfix-source-1.zip` (319,941 bytes, 205 entries; Git blob `a8a6531092423451136cec244903b8d5aecb6cd1`). It contains the Android app tree, tests, Rust core, Stockfish/Lc0 build scripts and Supabase functions. The internal Gradle version has not been independently read; the workflow prints but does not assert the expected version.
-- The patch-7 workflow includes Node logic tests, Maia static integration checks, shell syntax validation, Stockfish/Lc0/Rust builds, Gradle/APK verification and packaging of the same source archive with provenance/checksums. It omits Playwright UI, Java policy and Deno suites, uses ephemeral signing, and has no verified successful Actions result in this review.
-- Main CI remains hardcoded to v0.4.0, including its source fetch and version assertion; it does not build the latest Part1 upload or patch-7 candidate.
-- The 5.0 final-dev branch uses a v0.5.0 base plus overlays. Run #43911525393 failed at Playwright/Chromium installation on `ubuntu26.04-x64`; Node logic and Java policy/bridge compile tests passed, while UI, Deno, native builds, APK and artifact steps were skipped.
+## Repository and source state
+- Repository: `Mahirabsar2/chessbuddy`; main documentation is updated separately from the active build branch.
+- Active 2.0.0 development branch: `chessbuddy-2.0.0-rebuild`, HEAD `22474e7358f18f381957c4b29d09f452dbfc6677` (“Fix online move sync and clock reconciliation”).
+- Five split source ZIPs (Part1–Part5) are present on that branch. The workflow validates each ZIP, extracts Part5, applies `repairs/apply_repairs.py`, and reassembles Stockfish from Parts1–4. The expanded app source is reconstructed in CI rather than checked into the branch root.
+- README/changelog describe version 2.0.0 and the intended product features. Those claims still require UI/device/live-service verification.
 
-## Latest verified build — development only
-- v0.5.0 development build #37 / run ID `44071209046`, branch `Mahirabsar2-patch-3`: SUCCESS.
-- Logic tests: 96/96 passed. Stockfish sf_19 arm64 compilation, Gradle release build, APK verification and artifact upload passed.
-- APK: package `com.chessbuddy`, versionCode 1037, versionName 0.5.0, 79,778,392 bytes.
-- Artifact `ChessBuddy-build-37`, ID `14322817023`, contains the APK, exact diagnostics source ZIP used for the build, build info, verification, Stockfish provenance and SHA256 manifest. Expires 2026-12-01 11:09:33 UTC.
-- This is a v0.5.0 development/account-auth-diagnostics build, not a verified 1.0.0, 2.0.0, 4.0 or 5.0 release.
-- No new build or tests were verified on 2026-11-18.
+## Latest verified build — 2.0.0 CI candidate
+- GitHub Actions run #13 / ID `44535399591`, commit `22474e7358f18f381957c4b29d09f452dbfc6677`: **SUCCESS**, 2026-11-19.
+- All five input ZIP integrity checks passed.
+- Stockfish reassembly/hash verification passed: `0470a60d55495faaa56fa4a47a938569abdbeb80cd6b4c12dcc4efc139a11bd6`.
+- JavaScript logic tests: **102/102 passed**; startup/home/version/avatar smoke test passed.
+- Java policy test: `OK PolicyTest`.
+- Gradle `assembleRelease`: **BUILD SUCCESSFUL**; APK signature verification passed using APK Signature Scheme v2.
+- Artifacts uploaded: APK artifact ID `14536355615` (81,494,454 bytes) and extracted-source artifact ID `14536315530` (164,098,591 bytes).
+- The source artifact contains a `.tar.gz` snapshot of the post-repair/reassembled working tree. The APK and source are separate Actions artifacts.
+- **Not a release-certified pair:** there is no exact matching source ZIP packaged beside the APK, no combined release bundle/linked checksum manifest, and signing uses a temporary CI key. CI did not independently dump/assert APK package/version metadata.
+- [Run #13](https://github.com/Mahirabsar2/chessbuddy/actions/runs/44535399591).
+
+## Other CI baseline and mismatches
+- Main branch `.github/workflows/android-build.yml` remains hardcoded to download and assert `ChessBuddy-v0.4.0-source.zip`; it is not the 2.0.0 workflow.
+- The 2.0.0 workflow runs on `chessbuddy-2.0.0-rebuild` and produces two separate artifacts; its current packaging does not satisfy the exact-source-ZIP-beside-APK requirement.
 
 ## Blockers and verification gaps
-- 2.0.0 Part1 payload is not inspectable and no complete source/APK pair is verified.
-- Patch-7 1.0.0-rc1 candidate has no verified build result and lacks an exact version assertion.
-- Patch-7 workflow omits UI, Java policy and Deno tests; signing is ephemeral.
-- 5.0 UI workflow is blocked by Playwright/Chromium incompatibility on the current runner.
-- Main CI is stale and builds v0.4.0.
-- No physical-device, full board interaction, both play modes on-device, live provider, API-key persistence or stable update-signing test is verified.
+- Exact matching source ZIP is not bundled with the APK; no single artifact contains both plus provenance/checksums.
+- Temporary signing key is unsuitable for stable update installs.
+- Playwright/browser UI tests and physical Android testing are not verified by run #13.
+- Live Supabase OAuth/email recovery/profile flows, live Lichess calls, two-device multiplayer, human-vs-AI/AI-vs-AI on-device, piece-selection UX, and OpenAI/Claude live calls/key persistence remain unverified.
+- Source ZIP secret/signing-material audit and APK package/version extraction remain outstanding.
 
 ## Exact next steps
-1. Obtain/assemble the complete 2.0.0 source archive and inspect its version, source tree and security-sensitive files.
-2. Select one immutable source ZIP and make CI assert its exact version and SHA-256.
-3. Build the APK from that exact source and package the identical ZIP beside it with provenance and SHA256SUMS.
-4. Pin a Playwright-compatible runner (for example, Ubuntu 24.04) and run logic, Java, UI, Deno, Stockfish, Lc0/Rust, Gradle and APK checks.
-5. Configure persistent private signing through GitHub Secrets; never include signing keys in source.
-6. Device-test tabs, board/piece selection, all special legal moves, both play modes, OpenAI/Claude requests and API-key save/reload.
-7. Verify the final APK/source pair, provenance, checksums and signing identity before release.
+1. Generate a deterministic ZIP from the exact post-repair, Stockfish-reassembled source tree used by Gradle.
+2. Bundle that ZIP, the APK, provenance, SHA-256 manifest and verification report in one artifact; fail CI unless both APK and source ZIP are present.
+3. Extract APK metadata and assert expected package/version 2.0.0.
+4. Use a persistent private signing identity from GitHub Secrets; do not commit signing material.
+5. Run Playwright UI tests on a supported runner, then physical-device tests for tabs, board/piece selection, special moves, both play modes, API providers and key persistence.
+6. Audit the final source ZIP for secrets/keystores and verify its checksum against the build provenance.
+7. Align main CI with a selected current version or clearly label it as a legacy v0.4.0 workflow.
+
+## Daily records
+- [2026-11-19](PROJECT_LOG_2026-11-19.md)
+- [2026-11-18](PROJECT_LOG_2026-11-18.md)
+- [2026-11-17](PROJECT_LOG_2026-11-17.md)
+- Earlier entries remain in [PROJECT_LOG.md](PROJECT_LOG.md).
