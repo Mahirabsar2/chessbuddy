@@ -405,3 +405,140 @@ edit_online("docs/ONLINE_PLAY_STATUS.md", [
 ])
 
 print("Online-play fixes applied.")
+
+
+
+# ChessBuddy 3.0.0: Maia network switching and complete official Maia-1 ladder.
+edit("app/src/main/assets/js/engine.js", [
+("""    var key = provider === 'lc0' ? 'lc0|' : 'stockfish|';
+    this.modelId = modelId;
+    if (this.providerKey === key) { if (this.t && typeof this.t.setProvider === 'function') this.t.setProvider(provider, modelId); return this.ensureReady(); }
+    this.provider = provider; this.providerKey = key;""",
+"""    // Every Maia network is a distinct Lc0 configuration. Reusing the old process
+    // after changing the selected weights silently keeps the previous network loaded.
+    var key = provider === 'lc0' ? 'lc0|' + modelId : 'stockfish|';
+    this.modelId = modelId;
+    if (this.providerKey === key) { if (this.t && typeof this.t.setProvider === 'function') this.t.setProvider(provider, modelId); return this.ensureReady(); }
+    this.provider = provider; this.providerKey = key;""")
+])
+
+edit("app/src/main/java/com/chessbuddy/NativeBridge.java", [
+("""            String key = "lc0".equals(selected) ? "lc0|" : "stockfish|";""",
+"""            // Restart Lc0 when the selected weights change; otherwise it keeps the previous network in memory.
+            String key = "lc0".equals(selected) ? "lc0|" + selectedModel : "stockfish|";"""),
+("""                if (!("maia-1100".equals(selectedModel) || "maia-1500".equals(selectedModel) || "maia-1900".equals(selectedModel))) {""",
+"""                if (!selectedModel.matches("maia-(1100|1200|1300|1400|1500|1600|1700|1800|1900)")) {"""),
+("""        final String id, file, url, sha256;
+        final long bytes;
+        MaiaModelEntry(String id, String file, String url, String sha256, long bytes) {
+            this.id = id; this.file = file; this.url = url; this.sha256 = sha256; this.bytes = bytes;
+        }""",
+"""        final String id, file, url, sha256, gitBlobSha1;
+        final long bytes;
+        MaiaModelEntry(String id, String file, String url, String sha256, String gitBlobSha1, long bytes) {
+            this.id = id; this.file = file; this.url = url; this.sha256 = sha256; this.gitBlobSha1 = gitBlobSha1; this.bytes = bytes;
+        }"""),
+("""        if (!("maia-1100".equals(modelId) || "maia-1500".equals(modelId) || "maia-1900".equals(modelId))) return null;""",
+"""        if (modelId == null || !modelId.matches("maia-(1100|1200|1300|1400|1500|1600|1700|1800|1900)")) return null;"""),
+("""                    jsonString(item, "sha256").toLowerCase(java.util.Locale.US), jsonLong(item, "bytes"));""",
+"""                    jsonString(item, "sha256").toLowerCase(java.util.Locale.US),
+                    jsonString(item, "gitBlobSha1").toLowerCase(java.util.Locale.US), jsonLong(item, "bytes"));"""),
+("""    private File maiaModelFile(String modelId, MaiaModelEntry entry) throws Exception {""",
+"""    // Some official Maia release assets do not publish SHA-256 checksums. For those,
+    // verify the exact upstream Git blob object hash pinned in the model manifest.
+    private static String gitBlobSha1(File file) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-1");
+        digest.update(("blob " + file.length() + "\\\\0").getBytes("UTF-8"));
+        InputStream in = new java.io.FileInputStream(file);
+        byte[] buf = new byte[65536];
+        try { int n; while ((n = in.read(buf)) != -1) digest.update(buf, 0, n); } finally { in.close(); }
+        StringBuilder hex = new StringBuilder();
+        for (byte b : digest.digest()) hex.append(String.format(java.util.Locale.US, "%02x", b & 0xff));
+        return hex.toString();
+    }
+    private static boolean hasModelIntegrity(MaiaModelEntry entry) {
+        return entry.sha256.matches("[0-9a-f]{64}") || entry.gitBlobSha1.matches("[0-9a-f]{40}");
+    }
+
+    private File maiaModelFile(String modelId, MaiaModelEntry entry) throws Exception {"""),
+("""        if (!fileName.matches("maia-(1100|1500|1900)\\\\.pb\\\\.gz")) throw new IllegalArgumentException("Invalid model filename");""",
+"""        if (!fileName.matches("maia-(1100|1200|1300|1400|1500|1600|1700|1800|1900)\\\\.pb\\\\.gz")) throw new IllegalArgumentException("Invalid model filename");"""),
+("""            if (!file.isFile() || expectedBytes < 1024 || file.length() != expectedBytes || !expectedHash.matches("[0-9a-f]{64}")) return false;
+            return expectedHash.equals(sha256(file));""",
+"""            if (!file.isFile() || expectedBytes < 1024 || file.length() != expectedBytes || !hasModelIntegrity(entry)) return false;
+            if (expectedHash.matches("[0-9a-f]{64}")) return expectedHash.equals(sha256(file));
+            return entry.gitBlobSha1.equals(gitBlobSha1(file));"""),
+("""            if (entry == null || !entry.sha256.matches("[0-9a-f]{64}") || entry.bytes < 1024) return "";""",
+"""            if (entry == null || !hasModelIntegrity(entry) || entry.bytes < 1024) return "";"""),
+("""            final String expectedHash = entry.sha256;
+            final long expectedBytes = entry.bytes;
+            if (!url.equals("https://github.com/CSSLab/maia-chess/releases/download/v1.0/" + target.getName())
+                    || !expectedHash.matches("[0-9a-f]{64}") || expectedBytes < 1024 || expectedBytes > 100L * 1024L * 1024L) {""",
+"""            final String expectedHash = entry.sha256;
+            final String expectedGitBlobSha1 = entry.gitBlobSha1;
+            final long expectedBytes = entry.bytes;
+            if (!url.equals("https://github.com/CSSLab/maia-chess/releases/download/v1.0/" + target.getName())
+                    || !hasModelIntegrity(entry) || expectedBytes < 1024 || expectedBytes > 100L * 1024L * 1024L) {"""),
+("""                        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                        InputStream in = conn.getInputStream(); FileOutputStream out = new FileOutputStream(temp);""",
+"""                        boolean useGitBlobHash = !expectedHash.matches("[0-9a-f]{64}");
+                        MessageDigest digest = MessageDigest.getInstance(useGitBlobHash ? "SHA-1" : "SHA-256");
+                        if (useGitBlobHash) digest.update(("blob " + expectedBytes + "\\\\0").getBytes("UTF-8"));
+                        InputStream in = conn.getInputStream(); FileOutputStream out = new FileOutputStream(temp);"""),
+("""                        if (count != expectedBytes || !expectedHash.equals(actual.toString())) throw new IllegalStateException("Model checksum verification failed");""",
+"""                        String expectedDigest = useGitBlobHash ? expectedGitBlobSha1 : expectedHash;
+                        if (count != expectedBytes || !expectedDigest.equals(actual.toString())) throw new IllegalStateException("Model checksum verification failed");""")
+])
+
+import json
+from pathlib import Path as _Path
+manifest_path = _Path("app/src/main/assets/models/maia-models.json")
+manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+extra_models = [
+    (1200, 1249692, "64706a23a3e105d1a0e02e63e6ee9bee40bfdfe8"),
+    (1300, 1244431, "97181c6cc59de5a2d0c2d6a0fe1eb440cf76d7f2"),
+    (1400, 1328977, "4c2c9cccd28b362d40b35697dcd4062f12ed97c3"),
+    (1600, 1313870, "a5fcec728608025a35d5c06c1db3559fc2b39562"),
+    (1700, 1313415, "ab4208a76eaf4ddca63df71664a2c38cd46c350e"),
+    (1800, 1289431, "431bb24159a55bf32fe46e724353d3556b8b3862")
+]
+existing_ids = {m["id"] for m in manifest["models"]}
+for rating, size, blob_sha in extra_models:
+    model_id = "maia-" + str(rating)
+    if model_id not in existing_ids:
+        manifest["models"].append({
+            "id": model_id, "rating": rating, "file": model_id + ".pb.gz",
+            "url": "https://github.com/CSSLab/maia-chess/releases/download/v1.0/" + model_id + ".pb.gz",
+            "sha256": "", "gitBlobSha1": blob_sha, "bytes": size
+        })
+manifest["models"].sort(key=lambda m: m["rating"])
+manifest_path.write_text(json.dumps(manifest, indent=2) + "\\n", encoding="utf-8")
+
+edit("app/src/main/assets/js/strength.js", [
+("""  var MAIA = [
+    bot('maia1100', 'Maia 1100', 1100, 'Maia', 'Human-move prediction trained around 1100 Elo. Plays natural moves and makes human-like choices.', genSpec('maia1100')),
+    bot('maia1500', 'Maia 1500', 1500, 'Maia', 'Human-move prediction trained around 1500 Elo. A steady club-level opponent.', genSpec('maia1500')),
+    bot('maia1900', 'Maia 1900', 1900, 'Maia', 'Human-move prediction trained around 1900 Elo. More accurate, still human-like.', genSpec('maia1900'))
+  ];""",
+"""  var MAIA = [1100,1200,1300,1400,1500,1600,1700,1800,1900].map(function (rating) {
+    var id = 'maia' + rating;
+    return bot(id, 'Maia ' + rating, rating, 'Maia',
+      'Official Maia-1 human-move prediction network trained around ' + rating + ' Elo.', genSpec(id));
+  });""")
+])
+
+edit("tests/logic/engine.test.js", [
+("test('provider switching reuses one Lc0 process when only the Maia network changes', async () => {",
+ "test('provider switching restarts Lc0 when the Maia network changes', async () => {"),
+("assert.strictEqual(t.startCalls, afterFirst, 'changing the Maia model must not restart the Lc0 process');",
+ "assert.ok(t.startCalls > afterFirst, 'changing the Maia model must restart Lc0 so the new weights are loaded');")
+])
+
+edit("tests/logic/strength-models.test.js", [
+("test('Maia roster exposes the official 1100/1500/1900 models and one-node policyhead plans', () => {",
+ "test('Maia roster exposes all nine official 1100-1900 models and one-node policyhead plans', () => {"),
+("assert.deepStrictEqual(maia.map(b => b.modelId), ['maia-1100', 'maia-1500', 'maia-1900']);",
+ "assert.deepStrictEqual(maia.map(b => b.modelId), ['maia-1100','maia-1200','maia-1300','maia-1400','maia-1500','maia-1600','maia-1700','maia-1800','maia-1900']);")
+])
+
+edit("app/build.gradle", [("versionName '2.0.0'", "versionName '3.0.0'")])
