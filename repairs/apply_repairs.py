@@ -545,6 +545,6 @@ edit("app/build.gradle", [("versionName '2.0.0'", "versionName '3.0.0'")])
 
 
 edit("tests/logic/rebuild-smoke.test.js", [
-("assert.strictEqual(versionName, '2.0.0', 'Android versionName must be 2.0.0');",
+("assert(/versionName '3\\.0\\.0'/.test(gradle), 'Android versionName must be 3.0.0');",
  "assert.strictEqual(versionName, '3.0.0', 'Android versionName must be 3.0.0');")
 ])
