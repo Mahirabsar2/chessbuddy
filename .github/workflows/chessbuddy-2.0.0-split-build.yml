@@ -1,12 +1,12 @@
-name: ChessBuddy 2.0.0 split-source Android build
+name: ChessBuddy 3.0.0 Android build
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - chessbuddy-2.0.0-rebuild
+      - chessbuddy-3.0.0
     paths:
-      - 'ChessBuddy-2.0.0-Part1-Stockfish.zip'
+      - 'ChessBuddy-3.0.0-Part1-Stockfish.zip'
       - 'ChessBuddy-2.0.0-Part2-Stockfish.zip'
       - 'ChessBuddy-2.0.0-Part3-Stockfish.zip'
       - 'ChessBuddy-2.0.0-Part4-Stockfish.zip'
@@ -58,12 +58,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tar --exclude='./.git' --exclude='./.gradle' --exclude='./app/build' -czf "$RUNNER_TEMP/chessbuddy-2.0.0-source.tar.gz" .
+          tar --exclude='./.git' --exclude='./.gradle' --exclude='./app/build' -czf "$RUNNER_TEMP/chessbuddy-3.0.0-source.tar.gz" .
 
       - name: Upload extracted source snapshot
         uses: actions/upload-artifact@v4
         with:
-          name: ChessBuddy-2.0.0-extracted-source
+          name: ChessBuddy-3.0.0-extracted-source
           path: ${{ runner.temp }}/chessbuddy-2.0.0-source.tar.gz
           if-no-files-found: error
 
@@ -117,11 +117,11 @@ jobs:
           APK="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n1)"
           test -n "$APK" && test -s "$APK"
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          cp "$APK" "$RUNNER_TEMP/ChessBuddy-2.0.0-release.apk"
+          cp "$APK" "$RUNNER_TEMP/ChessBuddy-3.0.0-release.apk"
 
       - name: Upload signed release APK
         uses: actions/upload-artifact@v4
         with:
-          name: ChessBuddy-2.0.0-release-apk
+          name: ChessBuddy-3.0.0-release-apk
           path: ${{ runner.temp }}/ChessBuddy-2.0.0-release.apk
           if-no-files-found: error
