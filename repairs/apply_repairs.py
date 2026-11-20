@@ -548,3 +548,198 @@ edit("tests/logic/rebuild-smoke.test.js", [
 ("assert(/versionName '2\\.0\\.0'/.test(gradle), 'Android versionName must be 2.0.0');",
  "assert(/versionName '3\\.0\\.0'/.test(gradle), 'Android versionName must be 3.0.0');")
 ])
+
+
+# Startup authentication gate and persistent account restoration.
+edit_online("app/src/main/assets/js/app.js", [
+("""    if (name === 'bots') renderBots();
+    if (name === 'online') openOnlinePage();
+    if (name === 'lobby') renderLobbyResume();
+    renderHeader(); renderEngineUi(); window.scrollTo(0, 0);
+""",
+"""    if (name === 'bots') renderBots();
+    let pageTask = Promise.resolve();
+    if (name === 'online') pageTask = openOnlinePage();
+    if (name === 'lobby') renderLobbyResume();
+    renderHeader(); renderEngineUi(); window.scrollTo(0, 0);
+    return pageTask;
+"""),
+("""  let onlineAccountMode = 'signin';
+  function setOnlineAccountMode(mode) {
+""",
+"""  let onlineAccountMode = 'signup';
+  function unlockAuthenticatedApp() {
+    if (!Online.signedIn()) return false;
+    document.body.classList.remove('auth-required');
+    showTab('play');
+    showPlayScreen('lobby');
+    Native.logEvent('auth.app_unlocked', 'Encrypted saved session validated; app unlocked');
+    return true;
+  }
+  function setOnlineAccountMode(mode) {
+"""),
+("""      if (onlineProfile) {
+        await Online.setPresence('online');
+        if (!onlineHubTimer) onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500);
+        startOnlineHeartbeat();
+      }
+      if (create) onlineMessage(onlineProfile ? 'Account created. Your player profile is ready.' : 'Account created. Finish your player profile below.', 'ok');
+""",
+"""      if (onlineProfile) {
+        await Online.setPresence('online');
+        if (!onlineHubTimer) onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500);
+        startOnlineHeartbeat();
+      }
+      if (document.body.classList.contains('auth-required')) unlockAuthenticatedApp();
+      if (create) onlineMessage(onlineProfile ? 'Account created. Your player profile is ready.' : 'Account created. Finish your player profile from Play Online.', 'ok');
+"""),
+("""  async function onlineSignOut() {
+    try { await Online.signOut(); onlineProfile = null; onlineRoster = []; clearInterval(onlinePollTimer); clearInterval(onlineHubTimer); clearInterval(onlinePresenceTimer); onlinePresenceTimer = 0; setOnlinePanels('auth'); onlineMessage('Signed out.', 'ok'); }
+    catch (e) { onlineMessage(e.message, 'bad'); }
+  }
+""",
+"""  async function onlineSignOut() {
+    try {
+      await Online.signOut();
+      onlineProfile = null; onlineRoster = [];
+      clearInterval(onlinePollTimer); clearInterval(onlineHubTimer); clearInterval(onlinePresenceTimer); onlinePresenceTimer = 0;
+      document.body.classList.add('auth-required');
+      showTab('play');
+      setOnlineAccountMode('signin');
+      setOnlinePanels('auth');
+      showPlayScreen('online');
+    } catch (e) { onlineMessage(e.message, 'bad'); }
+  }
+"""),
+("""      onlineMessage('Sign-in complete. Loading your ChessBuddy account…', 'ok');
+      try {
+        await Online.setPresence('online');
+        await refreshOnlineHub(true);
+        if (!onlineHubTimer) onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500);
+        startOnlineHeartbeat();
+      } catch (e) { onlineMessage(e.message || 'Your account signed in, but online presence could not be updated.', 'bad'); }
+""",
+"""      onlineMessage('Sign-in complete. Restoring your ChessBuddy account…', 'ok');
+      try {
+        await refreshOnlineHub(true);
+        if (onlineProfile) await Online.setPresence('online');
+        if (!onlineHubTimer) onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500);
+        if (onlineProfile) startOnlineHeartbeat();
+        if (document.body.classList.contains('auth-required')) unlockAuthenticatedApp();
+      } catch (e) { onlineMessage(e.message || 'Your account signed in, but its profile could not be loaded.', 'bad'); }
+"""),
+("""    $('onlineGuest').onclick = () => { Native.logEvent('auth.continue_offline', 'User chose offline play without signing in'); showPlayScreen('lobby'); };
+""", ""),
+("""  function boot() {
+    applyTheme(); buildStaticUi(); bindEvents(); bindExtras(); Sound.setEnabled(settings.ui.sound); setInterval(clockTick, 100);
+    if (!restoreCurrent()) { setHeaders(); saveCurrent(); }
+    render(); showTab('play');
+    // Always boot into the local lobby. Network/auth screens are opened only after an explicit user action.
+    showPlayScreen('lobby');
+    Native.logEvent('app.ui_boot_complete', 'ChessBuddy interface initialized; local lobby opened');
+    refreshDiagnosticsUi();
+    const splash = $('startupSplash');
+    if (splash) { requestAnimationFrame(() => { setTimeout(() => { splash.classList.add('done'); setTimeout(() => splash.remove(), 500); }, 420); }); }
+    startEngine().then(() => renderEngineUi());
+  }
+""",
+"""  async function boot() {
+    applyTheme(); buildStaticUi(); bindEvents(); bindExtras(); Sound.setEnabled(settings.ui.sound); setInterval(clockTick, 100);
+    if (!restoreCurrent()) { setHeaders(); saveCurrent(); }
+    render(); showTab('play');
+    document.body.classList.add('auth-required');
+    setOnlineAccountMode('signup');
+    Native.logEvent('app.auth_gate_started', 'Waiting for saved session restore or account creation');
+    const splash = $('startupSplash');
+    try {
+      await showPlayScreen('online');
+      if (Online.signedIn()) unlockAuthenticatedApp();
+      else setOnlinePanels('auth');
+    } catch (e) {
+      setOnlinePanels('auth');
+      onlineMessage('Could not restore your saved session. Sign in to continue. ' + (e.message || ''), 'warn');
+    }
+    Native.logEvent('app.ui_boot_complete', Online.signedIn() ? 'Saved account session restored' : 'Account screen shown; no valid saved session');
+    refreshDiagnosticsUi();
+    if (splash) { requestAnimationFrame(() => { setTimeout(() => { splash.classList.add('done'); setTimeout(() => splash.remove(), 500); }, 220); }); }
+    startEngine().then(() => renderEngineUi()).catch(e => Native.logEvent('engine.startup_failed', 'Engine initialization failed: ' + (e && e.name || 'Error')));
+  }
+""")
+]);
+
+edit_online("app/src/main/assets/index.html", [
+("""          <p class="muted auth-copy" id="onlineAuthSubheading">Sign in to play friends, keep your games and sync your progress.</p>
+""",
+"""          <p class="muted auth-copy" id="onlineAuthSubheading">Create an account to play, save your progress and sync your games.</p>
+"""),
+("""          <button class="auth-guest" id="onlineGuest" type="button">Continue offline without an account</button>
+          <p class="auth-legal muted">Your session is protected by Android secure storage. An account is only needed for online friend play and synced profile features.</p>
+""",
+"""          <button class="auth-guest" id="onlineGuest" type="button" hidden>Continue offline without an account</button>
+          <p class="auth-legal muted">Stay signed in on this device. ChessBuddy stores your refresh session encrypted with Android Keystore until you sign out.</p>
+""")
+]);
+
+edit_online("app/src/main/assets/css/app.css", [
+("""@media(prefers-reduced-motion:reduce){#lobby .row-btn{transition:none}}
+""",
+"""@media(prefers-reduced-motion:reduce){#lobby .row-btn{transition:none}}
+
+/* Mandatory first-run account gate; hidden automatically after secure session restore. */
+body.auth-required{background:radial-gradient(ellipse at 50% 12%,#35452d 0,#262522 48%,#1d1c1a 100%)}
+body.auth-required #app{min-height:100dvh;max-width:620px;padding:0 16px 28px;display:flex;flex-direction:column}
+body.auth-required #topbar,body.auth-required .tabbar{display:none!important}
+body.auth-required main{display:flex;flex:1;align-items:center;padding:24px 0 calc(24px + env(safe-area-inset-bottom,0px))}
+body.auth-required #view-play{display:block!important;width:100%;margin:auto}
+body.auth-required #view-play> :not(#onlinePage){display:none!important}
+body.auth-required #onlinePage{display:block!important;width:100%;max-width:520px;margin:0 auto;padding:0}
+body.auth-required #onlinePage>.hero{display:none!important}
+body.auth-required #onlineMessage{margin:0 0 12px}
+body.auth-required .auth-card{margin:0;padding:24px 20px;border-radius:22px;background:linear-gradient(155deg,#343a30,#282724 66%);border:1px solid #c8e2ab22;box-shadow:0 24px 70px #0007}
+body.auth-required .auth-mark{width:46px;height:46px;border-radius:14px}
+body.auth-required .auth-mark svg{width:35px;height:35px}
+body.auth-required .auth-brand{font-size:11px;letter-spacing:1.5px;margin-bottom:22px}
+body.auth-required .auth-card h2{font-size:29px;letter-spacing:-.8px}
+body.auth-required .auth-copy{font-size:14px;margin-bottom:22px}
+body.auth-required .auth-legal{font-size:11px;color:#aaa69e}
+body.auth-required #onlineGuest{display:none!important}
+body.auth-required #onlineAuthCard[hidden],body.auth-required #onlineResetCard[hidden],body.auth-required #onlineProfileCard[hidden],body.auth-required #onlineHubCard[hidden]{display:none!important}
+""")
+]);
+
+edit_online("app/src/main/java/com/chessbuddy/SecretStore.java", [
+("""        return v.startsWith("e:") ? decrypt(v.substring(2)) : null;
+""",
+"""        if (!v.startsWith("e:")) { prefs.edit().remove(id).commit(); return null; }
+        String plain = decrypt(v.substring(2));
+        if (plain == null) prefs.edit().remove(id).commit();
+        return plain;
+""")
+]);
+
+edit_online("tests/logic/online-auth.test.js", [
+("""test('a 401 refreshes once and retries with the new access token; permission errors are not retried', async () => {
+""",
+"""test('saved session is restored through native refresh when the app starts again', async () => {
+  const { api, calls } = setup();
+  assert.strictEqual(api.signedIn(), false);
+  await api.restore();
+  assert.strictEqual(api.signedIn(), true);
+  assert.strictEqual(api.user().id, 'user-1');
+  assert.strictEqual(calls.filter(c => c.type === 'auth' && c.op === 'refresh').length, 1);
+});
+
+test('a 401 refreshes once and retries with the new access token; permission errors are not retried', async () => {
+""")
+]);
+
+edit_online("tests/logic/rebuild-smoke.test.js", [
+("""assert(/showPlayScreen\\('lobby'\\)/.test(app), 'startup must land on the local lobby, not block on account/network screens');""",
+"""assert(/document\\.body\\.classList\\.add\\('auth-required'\\)/.test(app) && /await showPlayScreen\\('online'\\)/.test(app), 'startup must show the account gate and await saved-session restoration');
+assert(/function unlockAuthenticatedApp\\(\\)/.test(app) && /document\\.body\\.classList\\.remove\\('auth-required'\\)/.test(app), 'the app shell must unlock only after authentication');
+assert(/let onlineAccountMode = 'signup'/.test(app), 'fresh installs must show signup by default');
+assert(/body\\.auth-required #topbar/.test(css) && /body\\.auth-required \\.tabbar/.test(css), 'auth gate must hide app navigation');
+assert(/Stay signed in on this device/.test(html), 'login UI must explain encrypted persistent sessions');""")
+]);
+
+print("Startup auth gate and persistent-login repair overlay applied.");
