@@ -55,8 +55,8 @@ This is the release tracker for the Next Gen branch. "Implemented" means the cod
 - [x] Five-minute challenge expiry is defined in the database schema.
 - [x] Direct challenges, accept/decline/cancel, game polling, server move validation and server-side game end RPCs exist in source; online move function was deployed previously.
 - [x] Online move submissions are sent immediately; the client currently polls for remote changes about every 2.2 seconds.
-- [ ] Apply the new single-pending-challenge migration to the live Supabase project. It takes participant locks and prevents more than one active incoming/outgoing challenge per player.
-- [ ] Test that two racing challenge requests cannot create multiple pending invites and that expired invites are cleaned up.
+- [x] Live Supabase `cb_send_challenge` already serializes both participants with transaction-scoped advisory locks and blocks a second pending invite involving either player. A rollback-only SQL test confirmed the recipient cannot immediately send another challenge; the test left zero active pending challenges. The same guard is included in the Next Gen source overlay for reproducible fresh deployments.
+- [ ] Run a concurrent two-request stress test against Supabase and confirm expired invites are cleaned up under load.
 - [ ] Test two separate accounts on two physical Android devices: invite, accept, first move, sync, clocks, reconnect, resign, draw and timeout.
 - [ ] Replace or supplement 2.2-second polling with Supabase Realtime subscriptions for near-instant remote move updates; retain polling fallback.
 - [ ] Verify server clock integrity, replay rejection, stale move rejection and permissions against the deployed SQL + Edge Function.
