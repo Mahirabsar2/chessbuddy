@@ -583,7 +583,7 @@ edit_online("app/src/main/assets/js/app.js", [
         if (!onlineHubTimer) onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500);
         startOnlineHeartbeat();
       }
-      if (create) onlineMessage(onlineProfile ? 'Account created. Your player profile is ready.' : 'Account created. Finish your player profile below.', 'ok');
+      if (create) onlineMessage(onlineProfile ? 'Account created. Your player profile is ready.' : 'Account created. Choose a username and display name to finish setting up your profile.', 'ok');
 """,
 """      if (onlineProfile) {
         await Online.setPresence('online');
