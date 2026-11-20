@@ -28,6 +28,7 @@ jobs:
     env:
       NDK_VERSION: "27.2.12479018"
       VERSION_NAME: ${{ github.event.inputs.version_name || '1.0.0' }}
+      HAS_RELEASE_KEY: ${{ secrets.CHESSBUDDY_KEYSTORE_BASE64 != '' }}
     steps:
       - name: Checkout Next Gen branch
         uses: actions/checkout@v4
@@ -139,7 +140,7 @@ jobs:
           done
 
       - name: Load persistent release signing key
-        if: secrets.CHESSBUDDY_KEYSTORE_BASE64 != ''
+        if: env.HAS_RELEASE_KEY == 'true'
         shell: bash
         env:
           CB_KEYSTORE_BASE64: ${{ secrets.CHESSBUDDY_KEYSTORE_BASE64 }}
@@ -159,7 +160,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Create temporary signing key for CI-only validation
-        if: secrets.CHESSBUDDY_KEYSTORE_BASE64 == ''
+        if: env.HAS_RELEASE_KEY != 'true'
         shell: bash
         run: |
           set -euo pipefail
