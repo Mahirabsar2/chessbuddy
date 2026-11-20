@@ -651,8 +651,11 @@ edit_online("app/src/main/assets/js/app.js", [
     setOnlineAccountMode('signup');
     Native.logEvent('app.auth_gate_started', 'Waiting for saved session restore or account creation');
     const splash = $('startupSplash');
+    const restoreTask = showPlayScreen('online');
+    // Keep the auth screen visible while the encrypted refresh token is checked in the background.
+    if (splash) { requestAnimationFrame(() => { setTimeout(() => { splash.classList.add('done'); setTimeout(() => splash.remove(), 500); }, 180); }); }
     try {
-      await showPlayScreen('online');
+      await restoreTask;
       if (Online.signedIn()) unlockAuthenticatedApp();
       else setOnlinePanels('auth');
     } catch (e) {
@@ -661,7 +664,6 @@ edit_online("app/src/main/assets/js/app.js", [
     }
     Native.logEvent('app.ui_boot_complete', Online.signedIn() ? 'Saved account session restored' : 'Account screen shown; no valid saved session');
     refreshDiagnosticsUi();
-    if (splash) { requestAnimationFrame(() => { setTimeout(() => { splash.classList.add('done'); setTimeout(() => splash.remove(), 500); }, 220); }); }
     startEngine().then(() => renderEngineUi()).catch(e => Native.logEvent('engine.startup_failed', 'Engine initialization failed: ' + (e && e.name || 'Error')));
   }
 """)
@@ -735,7 +737,7 @@ test('a 401 refreshes once and retries with the new access token; permission err
 
 edit_online("tests/logic/rebuild-smoke.test.js", [
 ("""assert(/showPlayScreen\\('lobby'\\)/.test(app), 'startup must land on the local lobby, not block on account/network screens');""",
-"""assert(/document\\.body\\.classList\\.add\\('auth-required'\\)/.test(app) && /await showPlayScreen\\('online'\\)/.test(app), 'startup must show the account gate and await saved-session restoration');
+"""assert(/document\\.body\\.classList\\.add\\('auth-required'\\)/.test(app) && /const restoreTask = showPlayScreen\\('online'\\)/.test(app) && /await restoreTask/.test(app), 'startup must show the account gate immediately and await saved-session restoration');
 assert(/function unlockAuthenticatedApp\\(\\)/.test(app) && /document\\.body\\.classList\\.remove\\('auth-required'\\)/.test(app), 'the app shell must unlock only after authentication');
 assert(/let onlineAccountMode = 'signup'/.test(app), 'fresh installs must show signup by default');
 assert(/body\\.auth-required #topbar/.test(css) && /body\\.auth-required \\.tabbar/.test(css), 'auth gate must hide app navigation');
