@@ -167,16 +167,16 @@ jobs:
 
 
       - name: Publish verified stable release for in-app updates
-        if: \${{ steps.apk.outputs.release_ready == 'true' }}
+        if: ${{ steps.apk.outputs.release_ready == 'true' }}
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           APK="$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk"
           SHA="$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk.sha256"
           sha256sum "$APK" | awk '{print $1 "  ChessBuddy-NextGen-1.0.0.apk"}' > "$SHA"
-          TAG="nextgen-1.0.0-build\${GITHUB_RUN_NUMBER}"
+          TAG="nextgen-1.0.0-build$GITHUB_RUN_NUMBER"
           gh release create "$TAG" "$APK" "$SHA" \
-            --title "ChessBuddy Next Gen 1.0.0 (build \${GITHUB_RUN_NUMBER})" \
+            --title "ChessBuddy Next Gen 1.0.0 (build $GITHUB_RUN_NUMBER)" \
             --notes "Verified ChessBuddy Next Gen 1.0.0 release. SHA-256 checksum is included. Android will request approval before installation."
