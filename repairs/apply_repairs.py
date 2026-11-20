@@ -745,3 +745,122 @@ assert(/Stay signed in on this device/.test(html), 'login UI must explain encryp
 ]);
 
 print("Startup auth gate and persistent-login repair overlay applied.");
+
+
+# Startup authentication gate and persistent-session restoration.
+def edit_startup_auth(path, old, new):
+    from pathlib import Path
+    p = Path(path)
+    data = p.read_text(encoding="utf-8")
+    if new in data:
+        return
+    if old not in data:
+        raise SystemExit("Startup auth patch could not find expected source in " + path)
+    p.write_text(data.replace(old, new, 1), encoding="utf-8")
+
+edit_startup_auth("app/src/main/assets/js/app.js",
+"""  async function openOnlinePage() {
+    clearInterval(onlineHubTimer);
+""",
+"""  function finishStartupAuthGate() {
+    if (!document.body.classList.contains('auth-gate')) return;
+    document.body.classList.remove('auth-gate');
+    showPlayScreen('lobby');
+    Native.logEvent('auth.startup_gate_completed', 'Saved or newly created account session accepted');
+  }
+  async function openOnlinePage() {
+    clearInterval(onlineHubTimer);
+""")
+
+edit_startup_auth("app/src/main/assets/js/app.js",
+"""      if (onlineProfile) await Online.setPresence('online');
+      onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500);
+      if (onlineProfile) startOnlineHeartbeat();
+""",
+"""      if (onlineProfile) {
+        await Online.setPresence('online');
+        startOnlineHeartbeat();
+        finishStartupAuthGate();
+      }
+      onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500);
+""")
+
+edit_startup_auth("app/src/main/assets/js/app.js",
+"""      if (onlineProfile) {
+        await Online.setPresence('online');
+        if (!onlineHubTimer) onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500);
+        startOnlineHeartbeat();
+      }
+""",
+"""      if (onlineProfile) {
+        await Online.setPresence('online');
+        if (!onlineHubTimer) onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500);
+        startOnlineHeartbeat();
+        finishStartupAuthGate();
+      }
+""")
+
+edit_startup_auth("app/src/main/assets/js/app.js",
+"""    try { await Online.registerProfile(username, display); await Online.setPresence('online'); await refreshOnlineHub(true); startOnlineHeartbeat(); if (!onlineHubTimer) onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500); onlineMessage('Profile saved. Find a player and send a challenge.', 'ok'); }
+""",
+"""    try { await Online.registerProfile(username, display); await Online.setPresence('online'); await refreshOnlineHub(true); startOnlineHeartbeat(); if (!onlineHubTimer) onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500); onlineMessage('Profile saved. Find a player and send a challenge.', 'ok'); finishStartupAuthGate(); }
+""")
+
+edit_startup_auth("app/src/main/assets/js/app.js",
+"""        startOnlineHeartbeat();
+      } catch (e) { onlineMessage(e.message || 'Your account signed in, but online presence could not be updated.', 'bad'); }
+""",
+"""        startOnlineHeartbeat();
+        finishStartupAuthGate();
+      } catch (e) { onlineMessage(e.message || 'Your account signed in, but online presence could not be updated.', 'bad'); }
+""")
+
+edit_startup_auth("app/src/main/assets/js/app.js",
+"""    // Always boot into the local lobby. Network/auth screens are opened only after an explicit user action.
+    showPlayScreen('lobby');
+    Native.logEvent('app.ui_boot_complete', 'ChessBuddy interface initialized; local lobby opened');
+""",
+"""    // Restore the encrypted Android refresh-token session before exposing the app.
+    document.body.classList.add('auth-gate');
+    showPlayScreen('online');
+    Native.logEvent('app.ui_boot_complete', 'ChessBuddy startup authentication gate opened');
+""")
+
+css = """/* Startup account gate: hide app navigation until a saved/new account is ready. */
+body.auth-gate .tabbar,
+body.auth-gate #hdrBack,
+body.auth-gate #hdrBrand,
+body.auth-gate #hdrTitle { display: none !important; }
+body.auth-gate #onlineGuest { display: none !important; }
+body.auth-gate #onlinePage > .hero { display: none; }
+body.auth-gate #onlinePage { min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+body.auth-gate #onlineAuthCard { margin-top: clamp(24px, 10vh, 90px); }
+"""
+from pathlib import Path as _Path
+_css = _Path("app/src/main/assets/css/app.css")
+_css_data = _css.read_text(encoding="utf-8")
+if "body.auth-gate .tabbar" not in _css_data:
+    _css.write_text(_css_data + "\n\n" + css, encoding="utf-8")
+
+_html = _Path("app/src/main/assets/index.html")
+_html_data = _html.read_text(encoding="utf-8")
+_html_data = _html_data.replace(
+    '<button class="auth-guest" id="onlineGuest" type="button">Continue offline without an account</button>',
+    '<button class="auth-guest" id="onlineGuest" type="button" hidden>Continue offline without an account</button>', 1)
+_html.write_text(_html_data, encoding="utf-8")
+
+_test = _Path("tests/logic/startup-auth-gate.test.js")
+_test.write_text("""const assert = require('assert');
+const fs = require('fs');
+const app = fs.readFileSync('app/src/main/assets/js/app.js', 'utf8');
+const css = fs.readFileSync('app/src/main/assets/css/app.css', 'utf8');
+const html = fs.readFileSync('app/src/main/assets/index.html', 'utf8');
+assert.match(app, /document\\.body\\.classList\\.add\\('auth-gate'\\)/);
+assert.match(app, /showPlayScreen\\('online'\\)/);
+assert.match(app, /await Online\\.restore\\(\\)/);
+assert.match(app, /function finishStartupAuthGate\\(\\)/);
+assert.match(app, /document\\.body\\.classList\\.remove\\('auth-gate'\\)/);
+assert.match(css, /body\\.auth-gate \\.tabbar/);
+assert.match(html, /id="onlineGuest"[^>]*hidden/);
+console.log('startup auth gate: 7 assertions passed');
+""", encoding="utf-8")
