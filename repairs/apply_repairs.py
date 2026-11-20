@@ -864,3 +864,21 @@ assert.match(css, /body\\.auth-gate \\.tabbar/);
 assert.match(html, /id="onlineGuest"[^>]*hidden/);
 console.log('startup auth gate: 7 assertions passed');
 """, encoding="utf-8")
+
+
+# Correct the Google/email callback ordering when the user has not created a player profile.
+edit_startup_auth("app/src/main/assets/js/app.js",
+"""        await Online.setPresence('online');
+        await refreshOnlineHub(true);
+        if (!onlineHubTimer) onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500);
+        startOnlineHeartbeat();
+        finishStartupAuthGate();
+""",
+"""        await refreshOnlineHub(true);
+        if (onlineProfile) {
+          await Online.setPresence('online');
+          if (!onlineHubTimer) onlineHubTimer = setInterval(() => { if (playScreen === 'online' && Online.signedIn()) refreshOnlineHub(false); }, 6500);
+          startOnlineHeartbeat();
+          finishStartupAuthGate();
+        }
+""")
