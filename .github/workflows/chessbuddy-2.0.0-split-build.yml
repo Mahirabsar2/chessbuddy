@@ -22,10 +22,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      CB_RELEASE_KEYSTORE_BASE64: \${{ secrets.CB_RELEASE_KEYSTORE_BASE64 }}
-      CB_RELEASE_STORE_PASSWORD: \${{ secrets.CB_RELEASE_STORE_PASSWORD }}
-      CB_RELEASE_KEY_ALIAS: \${{ secrets.CB_RELEASE_KEY_ALIAS }}
-      CB_RELEASE_KEY_PASSWORD: \${{ secrets.CB_RELEASE_KEY_PASSWORD }}
+      CB_RELEASE_KEYSTORE_BASE64: ${{ secrets.CB_RELEASE_KEYSTORE_BASE64 }}
+      CB_RELEASE_STORE_PASSWORD: ${{ secrets.CB_RELEASE_STORE_PASSWORD }}
+      CB_RELEASE_KEY_ALIAS: ${{ secrets.CB_RELEASE_KEY_ALIAS }}
+      CB_RELEASE_KEY_PASSWORD: ${{ secrets.CB_RELEASE_KEY_PASSWORD }}
     steps:
       - name: Check out Next Gen source branch
         uses: actions/checkout@v4
@@ -71,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ChessBuddy-NextGen-1.0.0-extracted-source
-          path: \${{ runner.temp }}/chessbuddy-nextgen-1.0.0-source.tar.gz
+          path: ${{ runner.temp }}/chessbuddy-nextgen-1.0.0-source.tar.gz
           if-no-files-found: error
 
       - name: Set up Node.js
@@ -97,7 +97,7 @@ jobs:
           gradle-version: '8.9'
 
       - name: Configure persistent signing key
-        if: \${{ env.CB_RELEASE_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.CB_RELEASE_KEYSTORE_BASE64 != '' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -113,7 +113,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Create preview-only signing key when release secrets are absent
-        if: \${{ env.CB_RELEASE_KEYSTORE_BASE64 == '' }}
+        if: ${{ env.CB_RELEASE_KEYSTORE_BASE64 == '' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -159,5 +159,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ChessBuddy-NextGen-1.0.0-preview-apk
-          path: \${{ runner.temp }}/ChessBuddy-NextGen-1.0.0.apk
+          path: ${{ runner.temp }}/ChessBuddy-NextGen-1.0.0.apk
           if-no-files-found: error
