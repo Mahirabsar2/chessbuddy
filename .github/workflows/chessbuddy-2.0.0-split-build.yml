@@ -1,10 +1,10 @@
-name: ChessBuddy 3.0.0 Android build
+name: ChessBuddy Next Gen 1.0.0 Android build
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - chessbuddy-3.0.0
+      - next-gen-1.0.0
     paths:
       - 'ChessBuddy-2.0.0-Part1-Stockfish.zip'
       - 'ChessBuddy-2.0.0-Part2-Stockfish.zip'
@@ -21,11 +21,16 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CB_RELEASE_KEYSTORE_BASE64: \${{ secrets.CB_RELEASE_KEYSTORE_BASE64 }}
+      CB_RELEASE_STORE_PASSWORD: \${{ secrets.CB_RELEASE_STORE_PASSWORD }}
+      CB_RELEASE_KEY_ALIAS: \${{ secrets.CB_RELEASE_KEY_ALIAS }}
+      CB_RELEASE_KEY_PASSWORD: \${{ secrets.CB_RELEASE_KEY_PASSWORD }}
     steps:
-      - name: Check out split-source branch
+      - name: Check out Next Gen source branch
         uses: actions/checkout@v4
         with:
-          ref: chessbuddy-3.0.0
+          ref: next-gen-1.0.0
 
       - name: Verify all five source ZIPs
         shell: bash
@@ -44,12 +49,14 @@ jobs:
       - name: Extract project source
         run: unzip -oq ChessBuddy-2.0.0-Part5-Source.zip -d .
 
-      - name: Apply reviewed repair overlay
+      - name: Apply reviewed repair and Next Gen overlays
         shell: bash
         run: |
           set -euo pipefail
-          test -f repairs/apply_repairs.py
           python3 repairs/apply_repairs.py
+          python3 repairs/nextgen_1_0_0.py
+          node --check app/src/main/assets/js/app.js
+          grep -q "versionName '1.0.0'" app/build.gradle
 
       - name: Reassemble and verify Stockfish
         run: bash scripts/reassemble_stockfish.sh .
@@ -58,13 +65,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tar --exclude='./.git' --exclude='./.gradle' --exclude='./app/build' -czf "$RUNNER_TEMP/chessbuddy-3.0.0-source.tar.gz" .
+          tar --exclude='./.git' --exclude='./.gradle' --exclude='./app/build' -czf "$RUNNER_TEMP/chessbuddy-nextgen-1.0.0-source.tar.gz" .
 
       - name: Upload extracted source snapshot
         uses: actions/upload-artifact@v4
         with:
-          name: ChessBuddy-3.0.0-extracted-source
-          path: ${{ runner.temp }}/chessbuddy-3.0.0-source.tar.gz
+          name: ChessBuddy-NextGen-1.0.0-extracted-source
+          path: \${{ runner.temp }}/chessbuddy-nextgen-1.0.0-source.tar.gz
           if-no-files-found: error
 
       - name: Set up Node.js
@@ -89,27 +96,46 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Create temporary CI release signing key
+      - name: Configure persistent signing key
+        if: \${{ env.CB_RELEASE_KEYSTORE_BASE64 != '' }}
         shell: bash
         run: |
           set -euo pipefail
-          KEYSTORE="$RUNNER_TEMP/chessbuddy-ci-release.jks"
+          KEYSTORE="$RUNNER_TEMP/chessbuddy-release.jks"
+          printf '%s' "$CB_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          {
+            echo "CB_KEYSTORE_FILE=$KEYSTORE"
+            echo "CB_KEYSTORE_PASSWORD=$CB_RELEASE_STORE_PASSWORD"
+            echo "CB_KEY_ALIAS=$CB_RELEASE_KEY_ALIAS"
+            echo "CB_KEY_PASSWORD=$CB_RELEASE_KEY_PASSWORD"
+            echo "CB_SIGNING_MODE=persistent"
+          } >> "$GITHUB_ENV"
+
+      - name: Create preview-only signing key when release secrets are absent
+        if: \${{ env.CB_RELEASE_KEYSTORE_BASE64 == '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEYSTORE="$RUNNER_TEMP/chessbuddy-preview.jks"
           keytool -genkeypair -noprompt \
             -keystore "$KEYSTORE" \
             -storepass changeit -keypass changeit \
             -alias chessbuddy -keyalg RSA -keysize 2048 -validity 3650 \
-            -dname "CN=ChessBuddy CI Test, OU=Build, O=ChessBuddy, C=US"
+            -dname "CN=ChessBuddy Next Gen Preview, OU=Build, O=ChessBuddy, C=US"
           {
             echo "CB_KEYSTORE_FILE=$KEYSTORE"
             echo "CB_KEYSTORE_PASSWORD=changeit"
             echo "CB_KEY_ALIAS=chessbuddy"
             echo "CB_KEY_PASSWORD=changeit"
+            echo "CB_SIGNING_MODE=preview-only"
           } >> "$GITHUB_ENV"
 
-      - name: Build signed Android release APK
+      - name: Build signed Android APK
         run: gradle --no-daemon assembleRelease
 
       - name: Verify and stage release APK
+        id: apk
         shell: bash
         run: |
           set -euo pipefail
@@ -117,11 +143,21 @@ jobs:
           APK="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n1)"
           test -n "$APK" && test -s "$APK"
           "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          cp "$APK" "$RUNNER_TEMP/ChessBuddy-3.0.0-release.apk"
+          APK_BYTES="$(stat -c '%s' "$APK")"
+          echo "APK size: $APK_BYTES bytes"
+          echo "apk_bytes=$APK_BYTES" >> "$GITHUB_OUTPUT"
+          echo "signing_mode=$CB_SIGNING_MODE" >> "$GITHUB_OUTPUT"
+          cp "$APK" "$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk"
+          if [ "$APK_BYTES" -lt 209715200 ]; then
+            echo "::warning::This build is not releasable: APK is below the required 200 MiB target."
+          fi
+          if [ "$CB_SIGNING_MODE" != "persistent" ]; then
+            echo "::warning::Preview signing only. Add the stable release keystore secrets before publishing auto-update releases."
+          fi
 
-      - name: Upload signed release APK
+      - name: Upload Next Gen APK candidate (not a public release)
         uses: actions/upload-artifact@v4
         with:
-          name: ChessBuddy-3.0.0-release-apk
-          path: ${{ runner.temp }}/ChessBuddy-3.0.0-release.apk
+          name: ChessBuddy-NextGen-1.0.0-preview-apk
+          path: \${{ runner.temp }}/ChessBuddy-NextGen-1.0.0.apk
           if-no-files-found: error
