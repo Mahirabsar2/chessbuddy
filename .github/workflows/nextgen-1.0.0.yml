@@ -11,7 +11,7 @@ on:
   push:
     branches: [chessbuddy-nextgen-1.0.0]
     paths:
-      - 'repairs/**'
+      - 'repairs/BUILD_TRIGGER.md'
       - '.github/workflows/nextgen-1.0.0.yml'
 
 permissions:
@@ -178,7 +178,7 @@ jobs:
       - name: Apply requested version name
         working-directory: project
         shell: bash
-        run: sed -i \"s/versionName '1.0.0'/versionName '$VERSION_NAME'/\" app/build.gradle
+        run: sed -i "s/versionName '1.0.0'/versionName '$VERSION_NAME'/" app/build.gradle
 
       - name: Build signed release APK
         working-directory: project
@@ -215,7 +215,7 @@ jobs:
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ChessBuddy-NextGen-1.0.0
+          name: ChessBuddy-NextGen-${{ env.VERSION_NAME }}
           path: project/release/*
           if-no-files-found: error
           retention-days: 30
