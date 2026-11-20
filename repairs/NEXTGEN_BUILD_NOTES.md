@@ -7,3 +7,4 @@ The current CI signing key is preview-only unless the repository owner configure
 The APK must exceed 200 MiB before this candidate can be accepted as the requested release.
 
 CI retry note: artifact upload path expression corrected in the default-branch workflow.
+CI wiring update: the isolated workflow artifact paths now use evaluated GitHub Actions expressions.
