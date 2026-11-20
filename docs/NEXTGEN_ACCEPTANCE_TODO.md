@@ -81,12 +81,14 @@ Current main navigation is still **Play, Coach, Archive and Settings**. The foll
 
 - [x] Existing app has an animated startup splash and custom ChessBuddy interface; current build is not a complete new visual redesign.
 - [x] Existing code uses original SVG vector portraits for its bot roster.
+- [x] Game Review summary responsive-layout repair: fixed SVG icon bounds, moved Close into a compact header control, equal-width primary actions, responsive score table/graph and safe-area-aware sheet sizing. CI build #38 passed JS and Java test suites and APK signature verification.
 - [ ] Integrate the prepared realistic portrait assets into the actual app and map each portrait consistently to the bot catalogue; verify image crop, compression, accessibility labels and attribution.
 - [ ] Add custom recorded/AI-generated character voice packs. Current implementation is Android/browser system TTS, not recorded character voices. The connected voice-generation balance was zero during this work, so no recorded voices are claimed or bundled.
 - [ ] Add multiple distinct voice packs and coach voice controls only when their audio files, licenses and playback path are available.
 - [ ] Create a real localization framework with translated strings, plural forms, RTL layout and persisted language selection.
 - [ ] Translate the full UI and lessons into Bengali, English, Spanish, French, German, Portuguese, Russian, Arabic, Hindi, Japanese, Korean and Chinese; verify fonts and long-string layouts.
 - [ ] Complete original brand identity: app icon, in-app logo, tab icons, loading visuals, empty/error states, and accessible contrast.
+- [ ] Test the revised Game Review summary visually on several Android screen sizes and with large system font scaling. The plus/minus overlay in the supplied screenshot is Android's OS-level magnification UI, not a ChessBuddy control (WebView zoom is disabled).
 - [ ] Profile, board, piece, background, sound and animation customization settings must persist across restarts and app updates.
 
 ## Updates, reliability, privacy and performance
@@ -104,9 +106,9 @@ Current main navigation is still **Play, Coach, Archive and Settings**. The foll
 ## Current verification snapshot
 
 - Latest prior baseline build: CI run #31, all JS logic tests and Java policy tests passed; Gradle APK build and signature verification passed.
-- Baseline APK: 81,502,317 bytes. This does **not** pass the 200 MiB release requirement.
+- Latest CI #38 APK artifact: 81,503,408 bytes. This does **not** pass the 200 MiB release requirement.
 - Baseline signing mode: preview-only (the persistent release keystore secrets were not configured).
-- The verified updater and one-pending-challenge code were added after baseline #31 and must pass a new CI run.
+- The verified updater and one-pending-challenge code, plus the responsive Game Review UI repair, passed CI #38.
 - Physical Android testing, two-device multiplayer testing, all nine Maia model runtime tests, live updater installation and full UI browser tests remain outstanding.
 
 **Release rule:** Do not deliver or label a build as “final”, “bug-free”, “200+ MB”, “auto-updating” or “Chess.com complete” until the corresponding checkboxes are completed with evidence. A 1.0.0 version label is not a guarantee of feature completeness or zero defects.
