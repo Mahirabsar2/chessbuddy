@@ -51,3 +51,13 @@
 5. Run browser UI tests on a supported Playwright runner and install/test on Android: tabs, piece selection, all special moves, human-vs-AI, AI-vs-AI, provider requests and API-key persistence.
 6. Audit the final source ZIP for secrets/signing material and verify its hash matches the source used by the APK build.
 7. Align or clearly isolate main CI so it cannot be mistaken for the current 2.0.0 pipeline.
+
+
+## 2026-11-20 — 3.0.0 CI candidate verified; release packaging still blocked
+- Reviewed active branch `chessbuddy-3.0.0`, HEAD `c217a62bf377849848e032ef5a38d00b781c236b`. Five split input ZIPs (still named 2.0.0 Parts 1–5) passed integrity checks; CI extracts Part5, applies the repair overlay and reassembles Stockfish.
+- Verified [Actions run #27](https://github.com/Mahirabsar2/chessbuddy/actions/runs/44725957133): all steps completed successfully. JavaScript logic tests 103/103 passed across 11 suites; rebuild smoke check passed; Java policy test passed; Stockfish hash verified; Gradle assembleRelease succeeded; APK v1/v2 signature checks passed.
+- Downloaded and inspected the APK: manifest package `com.chessbuddy`, versionName `3.0.0`, versionCode `10027`. APK SHA-256 `021e9e39ef4a05e96c14669a036fa209fc385cd9f2077f0d567e77a8d6410bd9`.
+- Artifacts: APK artifact `14622884616` (81,495,901 bytes) contains only the APK; source artifact `14623243658` (164,110,532 bytes) contains only a 198-file `.tar.gz` source snapshot. Source tar SHA-256 `ec0c99ca63ccba944b17373b1d99f9595c51eb581f5a60c47e696fa78d2bd348`. These are separate artifacts and the source is not the required exact matching ZIP, so this is not release-compliant.
+- Source review confirms Play/Coach/Archive/Settings navigation, human-vs-AI and AI-vs-AI selection, Stockfish/Maia paths, Claude/OpenAI-compatible provider settings, and AES-GCM Android Keystore key storage. Physical-device behavior, piece-selection UX, live provider calls/key persistence and backend auth remain unverified.
+- The workflow generates a temporary signing key; it does not assert APK metadata before upload; it does not run the separate UI test file or Playwright/device tests. Main CI remains pinned to v0.4.0. Branch source names/docs still say 2.0.0 while the APK is 3.0.0.
+- Exact next steps: generate a deterministic complete source ZIP from the post-repair/Stockfish tree; bundle it with APK/provenance/checksums in one artifact; add metadata assertions; use persistent signing from GitHub Secrets; run browser and physical Android tests; complete secret scan; align 2.0.0/3.0.0 labels and isolate or migrate legacy main CI.
