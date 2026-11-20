@@ -264,7 +264,7 @@ js = """
   }
   function applyPuzzleUci(ps, uci) {
     if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci)) throw new Error('The puzzle feed contained an invalid move.');
-    const m = ps.game.move({ from: uci.slice(0,2), to: uci.slice(2,4), promotion: uci[4] || 'q' });
+    const m = ps.game.move({ from: uci.slice(0,2), to: uci.slice(2,4), promotion: uci.length > 4 ? uci[4] : undefined });
     if (!m) throw new Error('The published puzzle line is not legal in this position.');
     ps.lastMove = { from: uci.slice(0,2), to: uci.slice(2,4) };
   }
