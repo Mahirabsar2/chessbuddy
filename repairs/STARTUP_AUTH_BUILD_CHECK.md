@@ -1,0 +1,1 @@
+Build gate: apply_repairs.py contains the single startup-auth overlay. Do not append duplicate patches. The CI job must run the overlay, JS tests, Java policy tests, Gradle release build and APK signature verification.
