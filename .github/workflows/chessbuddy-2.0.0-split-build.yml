@@ -56,8 +56,11 @@ jobs:
           python3 repairs/apply_repairs.py
           python3 repairs/nextgen_1_0_0.py
           python3 repairs/nextgen_updater_and_challenges.py
+          python3 repairs/nextgen_review_ui.py
           node --check app/src/main/assets/js/app.js
           node --check app/src/main/assets/js/updater.js
+          grep -q 'rv-summary-actions' app/src/main/assets/css/app.css
+          grep -q 'rv-action-icon' app/src/main/assets/js/app.js
           grep -q "versionName '1.0.0'" app/build.gradle
 
       - name: Reassemble and verify Stockfish
