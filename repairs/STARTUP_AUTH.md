@@ -1,0 +1,1 @@
+Startup authentication repair is included in apply_repairs.py. It opens the auth gate on first launch, attempts native secure refresh-token restoration, hides app navigation until a valid session and player profile exist, then opens the lobby. CI must run the repair overlay and both test suites before APK delivery.
