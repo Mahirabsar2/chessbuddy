@@ -882,3 +882,5 @@ edit_startup_auth("app/src/main/assets/js/app.js",
           finishStartupAuthGate();
         }
 """)
+
+# Rebuild trigger: startup auth gate callback ordering corrected.
