@@ -70,10 +70,12 @@ const alien = gambits.find(c => c.id === 'alien-gambit');
 assert(alien.moves.startsWith('e4 c6 d4 d5 Nd2 dxe4 Nxe4 Nf6 Ng5 h6 Nxf7'), 'Alien Gambit follows the documented Caro-Kann move order');
 assert(html.includes('id="gambitCoachLab"'), 'Gambit Coach panel is mounted');
 for (const id of ['gambitSearch','gambitCourseSelect','gambitPracticeSide','gambitPracticeMode','gambitCoachBoard',
-  'btnGambitPractice','btnGambitDemo','btnGambitCoachMove','btnGambitUndo','btnGambitRestart']) {
+  'btnGambitPractice','btnGambitDemo','btnGambitAutoDemo','btnGambitStopDemo','btnGambitCoachMove','btnGambitUndo','btnGambitRestart']) {
   assert(html.includes('id="' + id + '"'), 'Gambit Coach control exists: ' + id);
 }
 assert(app.includes('function gambitCoachReplies()'), 'coach automatically plays the opposing book replies');
+assert(app.includes('function startGambitAutoDemo()'), 'coach can automatically demonstrate a complete line');
+assert(app.includes('function stopGambitAutoDemo(silent)'), 'automatic coach demonstration can be stopped safely');
 assert(app.includes('function gambitEngineReply()'), 'Stockfish can continue when the user leaves the prepared line');
 assert(app.includes('settings.progress.gambitStars'), 'three-star course mastery is saved');
 assert(app.includes('Openings.LINES'), 'the complete existing ChessBuddy opening book is selectable');
