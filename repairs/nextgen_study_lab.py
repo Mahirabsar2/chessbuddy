@@ -43,6 +43,20 @@ markup = r'''      <section class="card cb-opening-lab" id="openingLab" aria-lab
           <div id="openingExplorerResults"></div>
         </div>
       </section>'''
+endgameMarkup = r'''      <section class="card cb-endgame-lab" id="endgameLab" aria-label="Endgame tablebase lab">
+        <div class="content-head"><div><span class="eyebrow">ENDGAME STUDY</span><h3>Endgame Lab</h3></div><span class="chip">TABLEBASE</span></div>
+        <p class="muted tiny">Load a sample or paste a FEN. ChessBuddy validates the position, then queries perfect-play tablebase results for positions with seven pieces or fewer.</p>
+        <div class="field"><label for="endgamePreset">Sample position</label><select id="endgamePreset"></select></div>
+        <div class="field"><label for="endgameFen">Position FEN</label><input id="endgameFen" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" /></div>
+        <div class="endgame-board-wrap"><div id="endgameBoard" class="board" role="grid" aria-label="Endgame tablebase board"></div></div>
+        <div class="endgame-controls">
+          <button class="btn" id="btnLoadEndgame" type="button">LOAD POSITION</button>
+          <button class="btn primary" id="btnLookupEndgame" type="button">LOOK UP TABLEBASE</button>
+          <button class="btn" id="btnPlayEndgameBest" type="button" disabled>PLAY BEST MOVE</button>
+        </div>
+        <div id="endgameStatus" class="notice" role="status" aria-live="polite">Choose a sample endgame or paste a FEN.</div>
+        <div id="endgameResults"></div>
+      </section>'''
 replace_once(
     "app/src/main/assets/index.html",
     '      <div id="learnPaths"></div>',
