@@ -36,6 +36,12 @@ markup = r'''      <section class="card cb-opening-lab" id="openingLab" aria-lab
         </div>
         <p class="muted tiny" id="openingLabStatus" role="status" aria-live="polite">Opening lines are stored locally and work offline.</p>
         <div class="opening-record" id="openingRecord"></div>
+        <div class="opening-explorer">
+          <div class="content-head"><div><span class="eyebrow">MASTER GAME DATABASE</span><b>Opening Explorer</b></div><button class="btn small" id="btnOpeningExplore" type="button">EXPLORE</button></div>
+          <p class="muted tiny">Look up master-game move choices and results from this exact position.</p>
+          <div id="openingExplorerStatus" class="muted tiny" role="status" aria-live="polite">Open a position, then tap Explore.</div>
+          <div id="openingExplorerResults"></div>
+        </div>
       </section>'''
 replace_once(
     "app/src/main/assets/index.html",
@@ -76,6 +82,7 @@ controller = r'''
     ]}
   ];
   let openingStudy = { id:'italian', snapshots:[], played:[], index:0, error:'' };
+  let openingExplorerFen = '', openingExplorerBusy = false;
   function openingUciMove(game, uci) {
     if (typeof uci !== 'string' || !/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci)) throw new Error('Invalid UCI move in the opening course.');
     return game.move({ from:uci.slice(0,2), to:uci.slice(2,4), promotion:uci.length > 4 ? uci[4] : undefined });
@@ -96,7 +103,13 @@ controller = r'''
     if (!host) return;
     const game = new Chess(openingStudy.snapshots[openingStudy.index] || new Chess().fen());
     const last = openingStudy.played[openingStudy.index - 1];
+    const currentFen = openingStudy.snapshots[openingStudy.index];
     Board.draw(host, game, { coords:true, last:last ? { from:last.from, to:last.to } : null });
+    if (openingExplorerFen && openingExplorerFen !== currentFen) {
+      openingExplorerFen = '';
+      $('openingExplorerStatus').textContent = 'Position changed. Tap Explore to load fresh master-game data.';
+      $('openingExplorerResults').innerHTML = '';
+    }
     const total = course.moves.length, complete = openingStudy.index >= total;
     $('openingCourseSelect').value = course.id;
     $('openingCourseMeta').textContent = course.eco + ' · ' + course.level + ' · ' + course.side + ' · ' + total + ' half-moves';
@@ -147,6 +160,44 @@ controller = r'''
     openingStudy.index = 0;
     renderOpeningLab();
   }
+  async function loadOpeningExplorer() {
+    if (openingExplorerBusy) return;
+    const fen = openingStudy.snapshots[openingStudy.index];
+    if (!fen || !Lichess || typeof Lichess.explorer !== 'function') {
+      $('openingExplorerStatus').textContent = 'The Lichess Masters explorer is unavailable in this build.';
+      return;
+    }
+    openingExplorerBusy = true;
+    $('btnOpeningExplore').disabled = true;
+    $('openingExplorerStatus').textContent = 'Loading master-game statistics for this position…';
+    try {
+      const data = await Lichess.explorer(fen);
+      if (openingStudy.snapshots[openingStudy.index] !== fen) return;
+      const moves = Array.isArray(data && data.moves) ? data.moves.slice().sort((a,b) =>
+        (Number(b.white||0)+Number(b.draws||0)+Number(b.black||0)) -
+        (Number(a.white||0)+Number(a.draws||0)+Number(a.black||0))).slice(0,8) : [];
+      if (!moves.length) {
+        $('openingExplorerStatus').textContent = 'No master games were found for this exact position. Try an earlier move.';
+        $('openingExplorerResults').innerHTML = '';
+        openingExplorerFen = fen;
+        return;
+      }
+      const games = Number(data.white||0) + Number(data.draws||0) + Number(data.black||0);
+      $('openingExplorerStatus').textContent = Number(games).toLocaleString() + ' master games · Top ' + moves.length + ' continuations';
+      $('openingExplorerResults').innerHTML = '<div class="opening-explorer-table">' + moves.map(m => {
+        const w = Number(m.white||0), d = Number(m.draws||0), b = Number(m.black||0), n = w+d+b;
+        const pct = x => n ? Math.round(x*100/n) + '%' : '—';
+        return '<div class="opening-explorer-row"><b>' + esc(m.san||m.uci||'Move') + '</b><span>' + n.toLocaleString() + ' games</span><small>W ' + pct(w) + ' · D ' + pct(d) + ' · B ' + pct(b) + '</small><small>Avg. rating ' + Number(m.averageRating||0).toLocaleString() + '</small></div>';
+      }).join('') + '</div>';
+      openingExplorerFen = fen;
+    } catch (e) {
+      $('openingExplorerStatus').textContent = e.message || 'Master-game data is offline. Your opening lesson still works.';
+      $('openingExplorerResults').innerHTML = '';
+    } finally {
+      openingExplorerBusy = false;
+      $('btnOpeningExplore').disabled = false;
+    }
+  }
   function populateOpeningLab() {
     const select = $('openingCourseSelect');
     if (!select) return;
@@ -171,7 +222,8 @@ replace_once(
     $('openingCourseSelect').onchange = e => loadOpeningCourse(e.target.value);
     $('btnOpeningNext').onclick = advanceOpening;
     $('btnOpeningBack').onclick = stepBackOpening;
-    $('btnOpeningRestart').onclick = restartOpening;""",
+    $('btnOpeningRestart').onclick = restartOpening;
+    $('btnOpeningExplore').onclick = loadOpeningExplorer;""",
     "opening lab controls"
 )
 
@@ -198,6 +250,12 @@ css = r'''
 .opening-controls { display:grid; grid-template-columns:1fr 1.3fr 1fr; gap:7px; }
 .opening-controls .btn { min-width:0; padding:10px 5px; }
 .opening-record { margin-top:9px; color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
+.opening-explorer { margin-top:14px; padding-top:12px; border-top:1px solid var(--border,#ffffff18); }
+.opening-explorer-table { display:grid; gap:6px; margin-top:9px; }
+.opening-explorer-row { display:grid; grid-template-columns:1fr auto; gap:3px 10px; align-items:center; padding:9px 10px; border-radius:9px; background:var(--surface2); min-width:0; }
+.opening-explorer-row b { font-size:14px; }
+.opening-explorer-row span,.opening-explorer-row small { color:var(--muted); font-size:11px; text-align:right; }
+.opening-explorer-row small:first-of-type { grid-column:1/-1; text-align:left; }
 '''
 p = Path("app/src/main/assets/css/app.css")
 css_source = p.read_text(encoding="utf-8")
