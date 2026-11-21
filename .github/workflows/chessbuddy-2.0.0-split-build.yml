@@ -127,8 +127,9 @@ jobs:
           src, dest = sys.argv[1], sys.argv[2]
           im = Image.open(src).convert("RGB")
           w, h = im.size
-          if w < 400 or h < 400 or abs(w-h) > 8:
-              raise SystemExit("Unexpected four-avatar sheet dimensions: %r" % (im.size,))
+          if w < 800 or h < 600 or not (1.65 <= w / h <= 1.82):
+              raise SystemExit("Expected a 16:9 four-character sheet, got %r" % (im.size,))
+          # Generated sheet is a 2x2 grid; square-crop each cell without stretching.
           boxes = {
               "streamer": (0, 0, w//2, h//2),
               "coach": (w//2, 0, w, h//2),
@@ -136,7 +137,11 @@ jobs:
               "prodigy": (w//2, h//2, w, h),
           }
           for name, box in boxes.items():
-              im.crop(box).resize((512,512), Image.Resampling.LANCZOS).save(dest + "/" + name + ".jpg", "JPEG", quality=92, optimize=True)
+              tile = im.crop(box)
+              tw, th = tile.size
+              side = min(tw, th)
+              left, top = (tw-side)//2, (th-side)//2
+              tile.crop((left, top, left+side, top+side)).resize((512,512), Image.Resampling.LANCZOS).save(dest + "/" + name + ".jpg", "JPEG", quality=92, optimize=True)
           PY
             cat > "$MEDIA_ROOT/MEDIA_NOTES.txt" <<'TXT'
           ChessBuddy original character media pack v1.
