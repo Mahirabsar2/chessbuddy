@@ -16,6 +16,11 @@ assert(app.includes('function loadRushPuzzle()'), 'random puzzle loader exists')
 assert(app.includes('function nextRushPuzzle()'), 'offline Puzzle Rush pack exists');
 assert(app.includes('RUSH_PUZZLE_PACK'), 'offline Puzzle Rush data exists');
 assert(html.includes('id="btnPuzzleRush3"') && html.includes('id="btnPuzzleRush5"'), '3-minute and 5-minute Puzzle Rush controls exist');
+assert(html.includes('id="btnPuzzleSurvival"'), 'Survival Puzzle Rush control exists');
+assert(app.includes("startPuzzleRush('survival')"), 'Survival mode can be started');
+assert(app.includes('puzzleRushBestSurvival'), 'Survival personal best is persisted');
+assert(app.includes('recordDailyPuzzleWin(ps)'), 'daily puzzle streak is recorded');
+assert(html.includes('id="puzzleDailyStreakCount"'), 'daily puzzle streak is displayed');
 assert(app.includes('function renderLearn()'), 'lesson curriculum renderer exists');
 assert(app.includes('function renderWatch()'), 'live watch renderer exists');
 assert(app.includes('function renderMore()'), 'More hub renderer exists');
