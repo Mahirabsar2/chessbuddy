@@ -41,8 +41,9 @@ replace_once(
 
 gambit_markup = r'''      <section class="card gambit-coach-lab" id="gambitCoachLab" aria-label="Opening and gambit practice">
         <div class="content-head"><div><span class="eyebrow">OPENING &amp; GAMBIT COACH</span><h3>Practice any line</h3></div><span class="chip">COACH MODE</span></div>
-        <p class="muted tiny">Browse the ChessBuddy opening book and dedicated gambit lines. The coach can demonstrate both sides, play the opponent's replies while you practice, or make the next book move for you.</p>
-        <div class="field"><label for="gambitSearch">Search openings and gambits</label><input id="gambitSearch" type="search" placeholder="Alien Gambit, King's Gambit, Sicilian…" autocomplete="off" /></div>
+        <p class="muted tiny">Browse 100+ opening-book lines, gambits and checkmate patterns. The coach can demonstrate both sides, play the opponent's replies while you practice, or make the next book move for you.</p>
+        <div class="field"><label for="gambitCategoryFilter">Repertoire category</label><select id="gambitCategoryFilter"><option value="all">All openings, gambits &amp; patterns</option><option value="opening">Openings</option><option value="gambit">Gambits</option><option value="pattern">Mating patterns</option></select></div>
+        <div class="field"><label for="gambitSearch">Search the repertoire</label><input id="gambitSearch" type="search" placeholder="Alien Gambit, Fool's Mate, Sicilian…" autocomplete="off" /></div>
         <div class="field"><label for="gambitCourseSelect">Repertoire line</label><select id="gambitCourseSelect"></select></div>
         <div class="gambit-course-meta" id="gambitCourseMeta"></div>
         <div class="grid2">
@@ -216,7 +217,23 @@ gambit_controller = r'''
     { id:'kieseritzky', name:'Kieseritzky Gambit', eco:'C39', side:'w', level:'Classical attack', idea:'White sacrifices a pawn and uses Ne5 to build an initiative against Black’s exposed kingside.', moves:'e4 e5 f4 exf4 Nf3 g5 h4 g4 Ne5' },
     { id:'falkbeer', name:'Falkbeer Countergambit', eco:'C31', side:'b', level:'Counterattack', idea:'Black returns the central blow immediately with ...d5 instead of passively defending e5.', moves:'e4 e5 f4 d5' },
     { id:'blackmar', name:'Blackmar Gambit', eco:'D00', side:'w', level:'Offbeat', idea:'White opens the center with e4 and invites a central pawn capture for quick development.', moves:'d4 d5 e4' },
-    { id:'qga', name:'Queen’s Gambit Accepted', eco:'D20', side:'w', level:'Classical', idea:'White offers the c-pawn for central control and quick development. It is a long-standing, sound opening.', moves:'d4 d5 c4 dxc4 e3 Nf6 Bxc4' }
+    { id:'qga', name:'Queen’s Gambit Accepted', eco:'D20', side:'w', level:'Classical', idea:'White offers the c-pawn for central control and quick development. It is a long-standing, sound opening.', moves:'d4 d5 c4 dxc4 e3 Nf6 Bxc4' },
+    { id:'staunton-gambit', name:'Staunton Gambit', eco:'A82', side:'w', level:'Dutch counterattack', idea:'White offers the e-pawn to open lines and challenge the Dutch setup before Black settles.', moves:'d4 f5 e4 fxe4 Nc3 Nf6 Bg5' },
+    { id:'schliemann', name:'Schliemann / Jaenisch Gambit', eco:'C63', side:'b', level:'Sharp Ruy Lopez', idea:'Black immediately challenges the bishop and central structure with ...f5. It creates complications but also weakens the king.', moves:'e4 e5 Nf3 Nc6 Bb5 f5' },
+    { id:'wing-sicilian', name:'Wing Gambit vs Sicilian', eco:'B20', side:'w', level:'Flank sacrifice', idea:'White offers the b-pawn to draw the c-pawn away and build a broad center.', moves:'e4 c5 b4 cxb4 a3 bxa3 Nxa3' },
+    { id:'icelandic', name:'Icelandic Gambit', eco:'B01', side:'b', level:'Scandinavian counterplay', idea:'Black gives a central pawn to gain rapid development and attack the white center.', moves:'e4 d5 exd5 Nf6 c4 e6 dxe6 Bxe6' },
+    { id:'portuguese-scan', name:'Portuguese Scandinavian', eco:'B01', side:'b', level:'Piece activity', idea:'Black offers a pawn for quick development and active piece play. White can decline the complications and consolidate.', moves:'e4 d5 exd5 Nf6 d4 Bg4' },
+    { id:'marshall-attack', name:'Marshall Attack · Ruy Lopez', eco:'C89', side:'b', level:'Theoretical attack', idea:'Black sacrifices a central pawn for rapid development and a direct initiative against the white king.', moves:'e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 O-O c3 d5' },
+    { id:'polish-gambit', name:'Polish Gambit', eco:'A40', side:'b', level:'Offbeat', idea:'Black challenges the center with ...e5 and can give a bishop for the b-pawn to open lines.', moves:'d4 Nf6 b4 e5 dxe5 Bxb4+' },
+    { id:'omega-gambit', name:'Omega Gambit', eco:'A45', side:'w', level:'Offbeat', idea:'White offers the e-pawn for rapid development and attacking chances against a king that stays central.', moves:'d4 Nf6 e4 Nxe4 Bd3 d5' },
+    { id:'milner-barry', name:'Milner–Barry Gambit · French', eco:'C02', side:'w', level:'Central attack', idea:'White offers the d-pawn for active piece play and pressure against the black king in the Advance French.', moves:'e4 e6 d4 d5 e5 c5 c3 Nc6 Nf3 Qb6 Bd3' },
+    { id:'french-wing', name:'Wing Gambit · French Defense', eco:'C00', side:'w', level:'Flank sacrifice', idea:'White offers the b-pawn to open the queenside and disrupt Black’s pawn chain.', moves:'e4 e6 Nf3 d5 e5 c5 b4 cxb4 a3' },
+    { id:'blackmar-lemberger', name:'Blackmar–Diemer · Lemberger', eco:'D00', side:'w', level:'Open lines', idea:'White sacrifices a central pawn to open the f-file and develop with tempo.', moves:'d4 d5 e4 dxe4 Nc3 Nf6 f3 exf3 Nxf3' },
+    { id:'goring-accepted', name:'Göring Gambit Accepted', eco:'C44', side:'w', level:'Open game', idea:'White offers the c-pawn for rapid development and open lines after the Scotch move order.', moves:'e4 e5 Nf3 Nc6 d4 exd4 c3 dxc3 Bc4 cxb2 Bxb2' },
+    { id:'latvian-accepted', name:'Latvian Gambit Accepted', eco:'C40', side:'b', level:'Tactical / risky', idea:'Black follows the pawn sacrifice with ...e4 to attack the f3-knight and gain attacking tempi.', moves:'e4 e5 Nf3 f5 exf5 e4' },
+    { id:'halloween-main', name:'Halloween Gambit · Main Line', eco:'C47', side:'w', level:'Wild / unsound', idea:'White gives a knight for central pawns and space. Black can return material or hold the extra piece with accurate play.', moves:'e4 e5 Nf3 Nc6 Nc3 Nf6 Nxe5 Nxe5 d4' },
+    { id:'fools-mate', name:'Fool’s Mate · Fastest Checkmate', eco:'M1', side:'w', kind:'pattern', level:'Mating pattern', idea:'This is not a gambit: it is the fastest possible checkmate in standard chess. White weakens the diagonal and Black finishes with ...Qh4 mate.', moves:'f3 e5 g4 Qh4#' },
+    { id:'scholars-mate', name:'Scholar’s Mate · Four-Move Pattern', eco:'C20', side:'w', kind:'pattern', level:'Mating pattern', idea:'A quick attack on f7 using the queen and bishop. Strong defenders can stop it, so learn both the threat and the defensive ideas.', moves:'e4 e5 Bc4 Nc6 Qh5 Nf6 Qxf7#' }
   ];
 
   let gambitRun = null, gambitCatalog = [], gambitSelected = 'alien-gambit', gambitSelectedMoves = [];
@@ -257,7 +274,7 @@ gambit_controller = r'''
   function updateGambitCourseInfo() {
     const line = gambitLineFor(gambitSelected), c = line.course;
     gambitSelectedMoves = line.san;
-    $('gambitCourseMeta').textContent = (c.kind === 'gambit' ? 'GAMBIT' : 'OPENING') + ' · ' + c.eco + ' · ' + c.level + ' · ' + line.uci.length + ' half-moves';
+    $('gambitCourseMeta').textContent = (c.kind === 'gambit' ? 'GAMBIT' : c.kind === 'pattern' ? 'MATING PATTERN' : 'OPENING') + ' · ' + c.eco + ' · ' + c.level + ' · ' + line.uci.length + ' half-moves';
     $('gambitCoachExplanation').textContent = c.idea;
     $('gambitPersonalBest').textContent = 'Your best: ' + starText(gambitStars(c.id));
     $('gambitSearch').value = $('gambitSearch').value || '';
@@ -266,11 +283,14 @@ gambit_controller = r'''
     const select = $('gambitCourseSelect');
     if (!select) return;
     const q = String(query || '').trim().toLowerCase(), courses = gambitCourseList();
-    const matches = courses.filter(c => !q || (c.name + ' ' + c.eco + ' ' + c.kind + ' ' + c.idea).toLowerCase().includes(q));
-    select.innerHTML = matches.map(c => '<option value="' + c.id + '">' + (c.kind === 'gambit' ? '♜ ' : '♟ ') + esc(c.name) + '</option>').join('');
+    const category = $('gambitCategoryFilter') ? $('gambitCategoryFilter').value : 'all';
+    const matches = courses.filter(c => (category === 'all' || c.kind === category) &&
+      (!q || (c.name + ' ' + c.eco + ' ' + c.kind + ' ' + c.idea).toLowerCase().includes(q)));
+    select.innerHTML = matches.map(c => '<option value="' + c.id + '">' + (c.kind === 'gambit' ? '♜ ' : c.kind === 'pattern' ? '✦ ' : '♟ ') + esc(c.name) + '</option>').join('');
     if (!matches.some(c => c.id === gambitSelected)) gambitSelected = (matches[0] || { id:'' }).id;
     select.value = gambitSelected;
-    $('gambitCatalogCount').textContent = matches.length + ' / ' + courses.length + ' lines';
+    const starTotals = courses.reduce((acc, c) => acc + gambitStars(c.id), 0);
+    $('gambitCatalogCount').textContent = matches.length + ' / ' + courses.length + ' lines · ' + starTotals + ' / ' + (courses.length * 3) + ' stars';
     if (gambitSelected) updateGambitCourseInfo();
     else $('gambitCoachNotice').textContent = 'No matching opening or gambit. Try another search.';
   }
@@ -569,6 +589,7 @@ replace_once(
     "    $('btnOpeningExplore').onclick = loadOpeningExplorer;",
     """    $('btnOpeningExplore').onclick = loadOpeningExplorer;
     $('gambitSearch').oninput = e => populateGambitCourseSelect(e.target.value);
+    $('gambitCategoryFilter').onchange = () => populateGambitCourseSelect($('gambitSearch').value);
     $('gambitCourseSelect').onchange = e => { gambitSelected = e.target.value; gambitRun = null; updateGambitCourseInfo(); renderGambitCoach(); };
     $('gambitPracticeSide').onchange = () => { if (gambitRun) startGambitPractice('practice'); };
     $('gambitPracticeMode').onchange = () => { if (gambitRun) startGambitPractice($('gambitPracticeMode').value); };
