@@ -46,7 +46,7 @@ markup = r'''      <section class="card cb-opening-lab" id="openingLab" aria-lab
 replace_once(
     "app/src/main/assets/index.html",
     '      <div id="learnPaths"></div>',
-    '      <div id="learnPaths"></div>\n' + markup,
+    '      <div id="learnPaths"></div>\n' + markup + '\n' + endgameMarkup,
     "Learn page opening lab mount"
 )
 
@@ -83,6 +83,13 @@ controller = r'''
   ];
   let openingStudy = { id:'italian', snapshots:[], played:[], index:0, error:'' };
   let openingExplorerFen = '', openingExplorerBusy = false;
+  const ENDGAME_PRESETS = [
+    { id:'kqk', name:'King + Queen vs King', fen:'7k/8/5KQ1/8/8/8/8/8 w - - 0 1' },
+    { id:'krk', name:'King + Rook vs King', fen:'7k/8/5K2/8/8/8/8/5R2 w - - 0 1' },
+    { id:'kpk', name:'King + Pawn vs King', fen:'8/8/8/8/4P3/4K3/8/7k w - - 0 1' },
+    { id:'kbbk', name:'King + Two Bishops vs King', fen:'7k/8/5K2/8/4B3/8/2B5/8 w - - 0 1' }
+  ];
+  let endgameGame = null, endgameData = null, endgameLookupFen = '';
   function openingUciMove(game, uci) {
     if (typeof uci !== 'string' || !/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci)) throw new Error('Invalid UCI move in the opening course.');
     return game.move({ from:uci.slice(0,2), to:uci.slice(2,4), promotion:uci.length > 4 ? uci[4] : undefined });
@@ -198,11 +205,106 @@ controller = r'''
       $('btnOpeningExplore').disabled = false;
     }
   }
+  function endgamePieceCount(fen) {
+    const board = String(fen || '').trim().split(/\s+/)[0] || '';
+    return board.replace(/[1-8/]/g, '').length;
+  }
+  function setEndgameStatus(message, kind) {
+    const el = $('endgameStatus');
+    if (!el) return;
+    el.textContent = message;
+    el.className = 'notice' + (kind ? ' ' + kind : '');
+  }
+  function renderEndgameBoard() {
+    if (!endgameGame || !$('endgameBoard')) return;
+    Board.draw($('endgameBoard'), endgameGame, { coords:true });
+    const count = endgamePieceCount(endgameGame.fen());
+    $('btnLookupEndgame').disabled = count > 7;
+    $('btnPlayEndgameBest').disabled = !(endgameData && endgameData.moves && endgameData.moves.length);
+  }
+  function loadEndgamePosition(fen) {
+    try {
+      const game = new Chess(String(fen || '').trim());
+      endgameGame = game;
+      endgameData = null;
+      endgameLookupFen = '';
+      $('endgameFen').value = game.fen();
+      $('endgameResults').innerHTML = '';
+      const count = endgamePieceCount(game.fen());
+      renderEndgameBoard();
+      if (count > 7) setEndgameStatus('Valid chess position · ' + count + ' pieces. Tablebase lookup supports up to 7 pieces.', 'warn');
+      else setEndgameStatus('Valid chess position · ' + count + ' pieces. Ready for perfect-play lookup.', 'ok');
+      return true;
+    } catch (e) {
+      endgameGame = null; endgameData = null; endgameLookupFen = '';
+      $('endgameBoard').innerHTML = '';
+      $('btnLookupEndgame').disabled = true;
+      $('btnPlayEndgameBest').disabled = true;
+      setEndgameStatus('Invalid FEN: ' + (e.message || 'position could not be loaded.'), 'bad');
+      return false;
+    }
+  }
+  async function lookupEndgameTablebase() {
+    if (!endgameGame || endgamePieceCount(endgameGame.fen()) > 7) {
+      setEndgameStatus('Load a valid position with seven pieces or fewer before using the tablebase.', 'warn');
+      return;
+    }
+    const fen = endgameGame.fen();
+    $('btnLookupEndgame').disabled = true;
+    setEndgameStatus('Querying the Lichess Syzygy tablebase…');
+    try {
+      const data = await Lichess.tablebase(fen);
+      if (!endgameGame || endgameGame.fen() !== fen) return;
+      if (!data || !Array.isArray(data.moves)) throw new Error('No tablebase result was returned for this position.');
+      endgameData = data; endgameLookupFen = fen;
+      const category = String(data.category || (data.moves[0] && data.moves[0].category) || 'unknown');
+      const dtz = data.dtz == null ? '—' : String(data.dtz);
+      $('endgameResults').innerHTML = '<div class="endgame-result-head"><b>Perfect-play result: ' + esc(category.toUpperCase()) + '</b><span>DTZ ' + esc(dtz) + '</span></div>' +
+        '<div class="endgame-move-list">' + data.moves.slice(0,6).map((m,i) =>
+          '<div class="endgame-move"><b>' + (i+1) + '. ' + esc(m.san || m.uci || 'Move') + '</b><span>' + esc(String(m.category || category)) + '</span><small>DTZ ' + esc(m.dtz == null ? '—' : String(m.dtz)) + '</small></div>'
+        ).join('') + '</div>';
+      setEndgameStatus('Tablebase result loaded. These results are based on perfect play for the supported endgame.', 'ok');
+      $('btnPlayEndgameBest').disabled = !data.moves.length;
+    } catch (e) {
+      endgameData = null; endgameLookupFen = '';
+      $('endgameResults').innerHTML = '';
+      setEndgameStatus(e.message || 'Tablebase data is unavailable. Your saved position is unchanged.', 'warn');
+      $('btnPlayEndgameBest').disabled = true;
+    } finally {
+      $('btnLookupEndgame').disabled = !endgameGame || endgamePieceCount(endgameGame.fen()) > 7;
+    }
+  }
+  function playBestEndgameMove() {
+    if (!endgameData || !endgameData.moves || !endgameData.moves.length || !endgameGame || endgameLookupFen !== endgameGame.fen()) return;
+    const uci = String(endgameData.moves[0].uci || '');
+    if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci)) {
+      setEndgameStatus('The tablebase did not provide a valid best-move coordinate.', 'bad');
+      return;
+    }
+    const move = endgameGame.move({ from:uci.slice(0,2), to:uci.slice(2,4), promotion:uci.length > 4 ? uci[4] : undefined });
+    if (!move) {
+      setEndgameStatus('The suggested tablebase move was not legal in this position.', 'bad');
+      return;
+    }
+    const fen = endgameGame.fen();
+    endgameData = null; endgameLookupFen = '';
+    $('endgameFen').value = fen;
+    $('endgameResults').innerHTML = '';
+    renderEndgameBoard();
+    setEndgameStatus('Played ' + move.san + '. Look up the new position to continue.', 'ok');
+  }
+  function populateEndgameLab() {
+    const select = $('endgamePreset');
+    if (!select) return;
+    select.innerHTML = ENDGAME_PRESETS.map(p => '<option value="' + p.id + '">' + esc(p.name) + '</option>').join('');
+    loadEndgamePosition(ENDGAME_PRESETS[0].fen);
+  }
   function populateOpeningLab() {
     const select = $('openingCourseSelect');
     if (!select) return;
     select.innerHTML = OPENING_COURSES.map(c => '<option value="' + c.id + '">' + esc(c.name) + '</option>').join('');
     loadOpeningCourse(openingStudy.id);
+    if (!$('endgamePreset').options.length) populateEndgameLab();
   }
 
 '''
@@ -223,7 +325,11 @@ replace_once(
     $('btnOpeningNext').onclick = advanceOpening;
     $('btnOpeningBack').onclick = stepBackOpening;
     $('btnOpeningRestart').onclick = restartOpening;
-    $('btnOpeningExplore').onclick = loadOpeningExplorer;""",
+    $('btnOpeningExplore').onclick = loadOpeningExplorer;
+    $('endgamePreset').onchange = e => { const preset = ENDGAME_PRESETS.find(p => p.id === e.target.value); if (preset) loadEndgamePosition(preset.fen); };
+    $('btnLoadEndgame').onclick = () => loadEndgamePosition($('endgameFen').value);
+    $('btnLookupEndgame').onclick = lookupEndgameTablebase;
+    $('btnPlayEndgameBest').onclick = playBestEndgameMove;""",
     "opening lab controls"
 )
 
@@ -250,6 +356,17 @@ css = r'''
 .opening-controls { display:grid; grid-template-columns:1fr 1.3fr 1fr; gap:7px; }
 .opening-controls .btn { min-width:0; padding:10px 5px; }
 .opening-record { margin-top:9px; color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
+.cb-endgame-lab { margin-top:14px; }
+.endgame-board-wrap { width:min(100%,320px); margin:12px auto; }
+#endgameBoard { width:100%; max-width:320px; aspect-ratio:1; }
+.endgame-controls { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.endgame-controls #btnPlayEndgameBest { grid-column:1/-1; }
+.endgame-controls .btn { min-width:0; padding:10px 5px; }
+.endgame-result-head { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; padding:10px; margin:10px 0 7px; border-radius:10px; background:var(--surface2); }
+.endgame-move-list { display:grid; gap:6px; }
+.endgame-move { display:grid; grid-template-columns:1fr auto; gap:3px 8px; padding:9px 10px; border-radius:9px; background:var(--surface2); }
+.endgame-move span,.endgame-move small { color:var(--muted); font-size:11px; text-align:right; }
+.endgame-move small { grid-column:1/-1; text-align:left; }
 .opening-explorer { margin-top:14px; padding-top:12px; border-top:1px solid var(--border,#ffffff18); }
 .opening-explorer-table { display:grid; gap:6px; margin-top:9px; }
 .opening-explorer-row { display:grid; grid-template-columns:1fr auto; gap:3px 10px; align-items:center; padding:9px 10px; border-radius:9px; background:var(--surface2); min-width:0; }
