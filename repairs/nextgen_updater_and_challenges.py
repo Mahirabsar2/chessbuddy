@@ -11,6 +11,13 @@ def edit(path, pairs):
         source = source.replace(old, new, 1)
     p.write_text(source, encoding="utf-8")
 
+# Lc0 is compiled with policyhead as its default search algorithm. The
+# current Lc0 CLI does not accept --search-algorithm; passing it makes Maia exit.
+edit("app/src/main/java/com/chessbuddy/NativeBridge.java", [
+("""                args = new String[] { "--weights=" + model.getAbsolutePath(), "--threads=1", "--backend=blas", "--search-algorithm=policyhead" };""",
+ """                args = new String[] { "--weights=" + model.getAbsolutePath(), "--threads=1", "--backend=blas" };""")
+])
+
 # A checksum-verified updater. DownloadManager handles background transfer; Android still
 # owns the final package-installer confirmation and the signing-key compatibility check.
 edit("app/src/main/java/com/chessbuddy/NativeBridge.java", [
