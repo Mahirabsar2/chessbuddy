@@ -11,6 +11,10 @@ for (const tab of tabs) {
 }
 assert(app.includes('function loadDailyPuzzle()'), 'daily puzzle loader exists');
 assert(app.includes('function puzzleBoardTap(event)'), 'daily puzzle board input exists');
+assert(app.includes('function startPuzzleRush(minutes)'), 'timed Puzzle Rush exists');
+assert(app.includes('function loadRushPuzzle()'), 'random puzzle loader exists');
+assert(lichess.includes('/api/puzzle\''), 'random Lichess puzzle endpoint exists');
+assert(html.includes('id="btnPuzzleRush3"') && html.includes('id="btnPuzzleRush5"'), '3-minute and 5-minute Puzzle Rush controls exist');
 assert(app.includes('function renderLearn()'), 'lesson curriculum renderer exists');
 assert(app.includes('function renderWatch()'), 'live watch renderer exists');
 assert(app.includes('function renderMore()'), 'More hub renderer exists');
