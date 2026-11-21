@@ -11,7 +11,7 @@ for (const tab of tabs) {
 }
 assert(app.includes('function loadDailyPuzzle()'), 'daily puzzle loader exists');
 assert(app.includes('function puzzleBoardTap(event)'), 'daily puzzle board input exists');
-assert(app.includes('function startPuzzleRush(minutes)'), 'timed Puzzle Rush exists');
+assert(app.includes('function startPuzzleRush(mode)'), 'timed Puzzle Rush exists');
 assert(app.includes('function loadRushPuzzle()'), 'random puzzle loader exists');
 assert(app.includes('function nextRushPuzzle()'), 'offline Puzzle Rush pack exists');
 assert(app.includes('RUSH_PUZZLE_PACK'), 'offline Puzzle Rush data exists');
