@@ -21,8 +21,9 @@ replace_once(
       return request('https://tablebase.lichess.org/standard?fen=' + encodeURIComponent(fen), 'tablebase:' + fen);
     }
     function dailyPuzzle() { return request('https://lichess.org/api/puzzle/daily', 'puzzle:daily'); }
+    function randomPuzzle() { return request('https://lichess.org/api/puzzle', 'puzzle:random:' + Date.now()); }
     function tvChannels() { return request('https://lichess.org/api/tv/channels', 'tv:channels'); }
-    return { explorer: explorer, tablebase: tablebase, dailyPuzzle: dailyPuzzle, tvChannels: tvChannels, clearCache: function () { cache.clear(); } };
+    return { explorer: explorer, tablebase: tablebase, dailyPuzzle: dailyPuzzle, randomPuzzle: randomPuzzle, tvChannels: tvChannels, clearCache: function () { cache.clear(); } };
 """,
     "Lichess API methods"
 )
@@ -51,6 +52,10 @@ replace_once(
           <button class="btn primary" id="btnDailyPuzzle" type="button">Load Daily Puzzle</button>
           <button class="btn" id="btnPuzzleHint" type="button" disabled>Hint</button>
           <button class="btn" id="btnPuzzleReset" type="button" disabled>Reset</button>
+        </div>
+        <div class="puzzle-rush-panel">
+          <div><span class="eyebrow">PUZZLE RUSH</span><b id="puzzleRushClock">3:00</b><small id="puzzleRushScore">Solve as many as you can before time runs out.</small></div>
+          <div class="puzzle-rush-actions"><button class="btn small" id="btnPuzzleRush3" type="button">3 MIN</button><button class="btn small" id="btnPuzzleRush5" type="button">5 MIN</button><button class="btn small" id="btnPuzzleRushStop" type="button" hidden>END</button></div>
         </div>
       </div>
       <div class="card"><h3>Training Progress</h3><div class="stat-strip"><div><b id="puzzlesSolvedCount">0</b><span>Puzzles Solved</span></div><div><b id="puzzleLessonsCount">0</b><span>Lessons Completed</span></div></div><p class="muted tiny">Puzzle history and ratings will remain local until a signed-in puzzle profile service is connected.</p></div>
@@ -209,6 +214,7 @@ js = """
   /* ================= Next Gen content tabs ================= */
   const LEARN_LESSONS = __LEARN_JSON__;
   let puzzleSession = null, puzzleLoading = false, watchChannels = null, watchLoading = false;
+  let puzzleRush = null, puzzleRushTick = 0;
 
   function renderPuzzleProgress() {
     const done = Number(settings.progress.puzzlesSolved || 0);
@@ -235,6 +241,68 @@ js = """
     Board.arrow(host, ps.hintMove && ps.hintMove.from, ps.hintMove && ps.hintMove.to, false);
     $('btnPuzzleHint').disabled = ps.completed || !ps.solution.length;
     $('btnPuzzleReset').disabled = false;
+  }
+  function updatePuzzleRushDisplay() {
+    const clock = $('puzzleRushClock'), score = $('puzzleRushScore');
+    if (!clock || !score) return;
+    if (!puzzleRush) { clock.textContent = '3:00'; score.textContent = 'Solve as many as you can before time runs out.'; return; }
+    const left = Math.max(0, Math.ceil((puzzleRush.endsAt - Date.now()) / 1000));
+    clock.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+    score.textContent = puzzleRush.solved + ' solved · ' + puzzleRush.misses + ' mistakes';
+  }
+  function finishPuzzleRush() {
+    if (!puzzleRush) return;
+    clearInterval(puzzleRushTick); puzzleRushTick = 0;
+    const result = puzzleRush, key = result.minutes === 3 ? 'puzzleRushBest3' : 'puzzleRushBest5';
+    const best = Number(settings.progress[key] || 0);
+    if (result.solved > best) settings.progress[key] = result.solved;
+    saveSettings();
+    puzzleRush = null;
+    $('btnPuzzleRushStop').hidden = true;
+    $('btnPuzzleRush3').disabled = false; $('btnPuzzleRush5').disabled = false;
+    $('puzzleRushClock').textContent = '0:00';
+    $('puzzleRushScore').textContent = 'Time! You solved ' + result.solved + ' puzzles with ' + result.misses + ' mistakes. Best: ' + Math.max(best, result.solved) + '.';
+    puzzleSession = null;
+    puzzleStatus('Puzzle Rush finished. Start another round when you are ready.', 'ok');
+  }
+  function startPuzzleRush(minutes) {
+    if (minutes !== 3 && minutes !== 5) return;
+    clearInterval(puzzleRushTick); puzzleRushTick = 0;
+    puzzleRush = { minutes: minutes, endsAt: Date.now() + minutes * 60000, solved: 0, misses: 0 };
+    puzzleSession = null;
+    $('btnPuzzleRush3').disabled = true; $('btnPuzzleRush5').disabled = true; $('btnPuzzleRushStop').hidden = false;
+    updatePuzzleRushDisplay();
+    puzzleRushTick = setInterval(() => {
+      if (!puzzleRush) return;
+      updatePuzzleRushDisplay();
+      if (Date.now() >= puzzleRush.endsAt) finishPuzzleRush();
+    }, 250);
+    loadRushPuzzle();
+  }
+  function stopPuzzleRush() {
+    if (!puzzleRush) return;
+    finishPuzzleRush();
+  }
+  async function loadRushPuzzle() {
+    if (!puzzleRush || puzzleLoading) return;
+    puzzleLoading = true;
+    puzzleStatus('Loading a new Puzzle Rush position…');
+    try {
+      const data = await Lichess.randomPuzzle();
+      if (!puzzleRush) return;
+      if (!data || !data.puzzle || !data.puzzle.fen || !Array.isArray(data.puzzle.solution) || !data.puzzle.solution.length)
+        throw new Error('The random puzzle response is incomplete.');
+      const pz = data.puzzle, game = new Chess(pz.fen);
+      puzzleSession = { data: data, game: game, solution: pz.solution.slice(), index: 0,
+        selected: null, hintMove: null, lastMove: pz.lastMove ? { from: pz.lastMove.slice(0,2), to: pz.lastMove.slice(2,4) } : null,
+        completed: false, originalFen: pz.fen, mode: 'rush' };
+      $('puzzleRating').textContent = 'Rating ' + pz.rating;
+      $('puzzleThemes').textContent = (pz.themes || []).map(t => t.replace(/-/g, ' ')).join(' · ') + ' · Random Puzzle Rush';
+      puzzleStatus('Puzzle ' + (puzzleRush.solved + 1) + ': find the best move for ' + (game.turn() === 'w' ? 'White' : 'Black') + '.');
+      renderPuzzleBoard();
+    } catch (e) {
+      if (puzzleRush) puzzleStatus((e.message || 'Could not load a random puzzle.') + ' Your timer is still running.', 'warn');
+    } finally { puzzleLoading = false; }
   }
   async function loadDailyPuzzle() {
     if (puzzleLoading) return;
@@ -280,6 +348,7 @@ js = """
     if (piece && piece.color === turn && sq !== ps.selected) { ps.selected = sq; renderPuzzleBoard(); return; }
     const expected = ps.solution[ps.index], from = ps.selected;
     if (!expected || expected.slice(0,2) !== from || expected.slice(2,4) !== sq) {
+      if (puzzleRush) { puzzleRush.misses++; updatePuzzleRushDisplay(); }
       puzzleStatus('Not quite. Check the forcing moves and try again.', 'warn');
       ps.selected = null; renderPuzzleBoard(); return;
     }
@@ -295,6 +364,14 @@ js = """
       ps.selected = null; ps.hintMove = null;
       if (ps.index >= ps.solution.length) {
         ps.completed = true;
+        if (ps.mode === 'rush' && puzzleRush) {
+          puzzleRush.solved++;
+          updatePuzzleRushDisplay();
+          puzzleStatus('Correct! Loading the next puzzle…', 'ok');
+          puzzleSession = null;
+          loadRushPuzzle();
+          return;
+        }
         settings.progress.puzzlesSolved = Number(settings.progress.puzzlesSolved || 0) + 1;
         saveSettings(); renderPuzzleProgress();
         puzzleStatus('Puzzle solved. Great work — your progress has been saved on this device.', 'ok');
@@ -405,6 +482,9 @@ replace_once(
     $('btnDailyPuzzle').onclick = loadDailyPuzzle;
     $('btnPuzzleHint').onclick = hintDailyPuzzle;
     $('btnPuzzleReset').onclick = resetDailyPuzzle;
+    $('btnPuzzleRush3').onclick = () => startPuzzleRush(3);
+    $('btnPuzzleRush5').onclick = () => startPuzzleRush(5);
+    $('btnPuzzleRushStop').onclick = stopPuzzleRush;
     $('learnPaths').addEventListener('click', e => { const b = e.target.closest('[data-lesson]'); if (b) openLearnLesson(b.getAttribute('data-lesson')); });
     $('btnWatchRefresh').onclick = () => { watchChannels = null; loadWatchChannels(); };
     $('watchChannels').addEventListener('click', e => {
@@ -438,6 +518,11 @@ css = """
 .content-head h3 { margin:0; }
 .puzzle-board-wrap { width:min(100%,360px); margin:12px auto; }
 #puzzleBoard { width:100%; max-width:360px; aspect-ratio:1; }
+.puzzle-rush-panel { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px; padding:12px; border-radius:12px; background:rgba(255,255,255,.045); }
+.puzzle-rush-panel > div:first-child { display:grid; gap:3px; }
+#puzzleRushClock { font-variant-numeric:tabular-nums; font-size:26px; font-weight:800; }
+#puzzleRushScore { color:var(--muted,#aaa); font-size:12px; }
+.puzzle-rush-actions { display:flex; flex-wrap:wrap; gap:6px; }
 .puzzle-actions { display:grid; grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(0,1fr)); gap:8px; }
 .puzzle-actions .btn { min-width:0; padding:8px 7px; font-size:12px; }
 .stat-strip { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; text-align:center; margin:10px 0 2px; }
