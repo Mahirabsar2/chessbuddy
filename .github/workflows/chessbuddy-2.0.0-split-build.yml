@@ -60,7 +60,6 @@ jobs:
           python3 repairs/nextgen_content_tabs.py
           python3 repairs/nextgen_maia_all9.py
           python3 repairs/nextgen_media_assets.py
-          python3 repairs/nextgen_realtime.py
           node --check app/src/main/assets/js/app.js
           node --check app/src/main/assets/js/lichess.js
           node --check app/src/main/assets/js/updater.js
@@ -162,21 +161,6 @@ jobs:
           (cd "$ASSET_DIR" && sha256sum media/avatars/*.jpg media/voices/*.mp3 > media/CHARACTER_MEDIA_SHA256SUMS.txt)
           echo "Original character media pack installed into Android assets."
           
-
-      - name: Bundle the pinned Supabase Realtime SDK locally
-        shell: bash
-        run: |
-          set -euo pipefail
-          BUNDLE_DIR="$RUNNER_TEMP/chessbuddy-realtime-bundle"
-          mkdir -p "$BUNDLE_DIR"
-          npm install --prefix "$BUNDLE_DIR" --no-package-lock --no-save @supabase/supabase-js@2.119.1 esbuild@0.25.0
-          cat > "$BUNDLE_DIR/entry.js" <<'JS'
-          import { createClient } from '@supabase/supabase-js';
-          window.ChessBuddySupabase = Object.freeze({ createClient });
-          JS
-          "$BUNDLE_DIR/node_modules/.bin/esbuild" "$BUNDLE_DIR/entry.js" --bundle --minify --platform=browser --format=iife --outfile="app/src/main/assets/js/supabase-realtime.js"
-          test -s app/src/main/assets/js/supabase-realtime.js
-          node --check app/src/main/assets/js/supabase-realtime.js
 
       - name: Verify all native ARM64 engines and core
         shell: bash
