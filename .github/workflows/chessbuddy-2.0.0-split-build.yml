@@ -296,6 +296,7 @@ jobs:
           cp "$APK" "$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0-preview.apk"
           TAG="nextgen-1.0.0-preview-build$GITHUB_RUN_NUMBER"
           gh release create "$TAG" "$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0-preview.apk" "$SHA" \
+            --target "$GITHUB_SHA" \
             --prerelease \
             --title "ChessBuddy Next Gen 1.0.0 Preview (build $GITHUB_RUN_NUMBER)" \
             --notes "Preview build for testing. This APK uses a temporary preview signing key, so later builds cannot update it in place. Install as a fresh app. This is not a stable auto-update release."
@@ -312,5 +313,6 @@ jobs:
           sha256sum "$APK" | awk '{print $1 "  ChessBuddy-NextGen-1.0.0.apk"}' > "$SHA"
           TAG="nextgen-1.0.0-build$GITHUB_RUN_NUMBER"
           gh release create "$TAG" "$APK" "$SHA" \
+            --target "$GITHUB_SHA" \
             --title "ChessBuddy Next Gen 1.0.0 (build $GITHUB_RUN_NUMBER)" \
             --notes "Verified ChessBuddy Next Gen 1.0.0 release. SHA-256 checksum is included. Android will request approval before installation."
