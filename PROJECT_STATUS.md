@@ -1,69 +1,64 @@
-# ChessBuddy project status — reviewed 2026-11-20
+# ChessBuddy project status — reviewed 2026-11-21
 
 ## Required product scope
 - Fresh Android chess app powered by native Stockfish.
-- Play, Coach, Archive/History and Settings tabs; polished Chess.com-inspired board and pieces using original ChessBuddy assets.
+- Clear tabs and a polished Chess.com-inspired board/piece experience.
 - Human-vs-AI and AI-vs-AI.
-- Reliable piece selection and legal moves, including captures, castling, en passant, promotion and undo.
-- GPT/OpenAI-compatible and Claude provider/model/API-key settings; API keys encrypted with Android Keystore.
-- Every release must include the exact complete source ZIP used for its APK in the same artifact, with provenance and SHA-256 checksums.
+- Correct piece selection and legal moves, including captures, castling, en passant, promotion and undo.
+- GPT/OpenAI-compatible and Claude provider/model/API-key settings, with API keys protected by Android Keystore-backed encryption.
+- Every release must include the exact complete source ZIP used for its APK beside the APK in one artifact, with provenance and SHA-256 checksums.
 
-## Repository and current source
-- Repository: [Mahirabsar2/chessbuddy](https://github.com/Mahirabsar2/chessbuddy).
-- Active development branch: `chessbuddy-3.0.0`, HEAD `c217a62bf377849848e032ef5a38d00b781c236b`.
-- The branch contains five split input archives named `ChessBuddy-2.0.0-Part1-Stockfish.zip` through `Part4-Stockfish.zip` and `Part5-Source.zip`. CI validates the ZIPs, extracts Part5, applies `repairs/apply_repairs.py`, and reassembles Stockfish.
-- Extracted Gradle source: package `com.chessbuddy`, versionName `3.0.0`, versionCode formula `10000 + GITHUB_RUN_NUMBER`. The APK downloaded from run #27 was independently parsed: package `com.chessbuddy`, versionName `3.0.0`, versionCode `10027`.
-- Version naming remains inconsistent: split inputs, `CHANGELOG-2.0.0.md`, and `docs/2.0.0_IMPLEMENTATION_STATUS.md` still identify 2.0.0; workflow/APK identify 3.0.0.
-- Main HEAD at review: `71ea6c6a23e80725b12b4f64961bbdf48a449ece`. Main's `.github/workflows/android-build.yml` still downloads `ChessBuddy-v0.4.0-source.zip`, asserts version 0.4.0, and builds that legacy version.
+## Current source and branch
+- Repository: https://github.com/Mahirabsar2/chessbuddy
+- Current development branch: next-gen-1.0.0, HEAD da20f25c289970e887517a2eb8209d7ed0450ea4.
+- CI reconstructs the app from five split input ZIPs: Parts 1–4 contain Stockfish payloads and Part 5 contains app source. It extracts Part 5, applies the repair/Next Gen overlays, rebuilds native components and then builds the APK. The expanded app source is not checked in at the branch root.
+- No complete standalone post-overlay source ZIP is present. CI currently creates a .tar.gz source snapshot instead.
+- Naming is inconsistent: input ZIPs and workflow filename still say 2.0.0, while the workflow and preview candidate are Next Gen 1.0.0. The overlay checks for Gradle versionName 1.0.0.
+- Default branch main remains a legacy path: .github/workflows/android-build.yml is still pinned to v0.4.0. Do not mistake its build for the current Next Gen pipeline.
 
-## Latest verified build — 3.0.0 CI candidate
-- [Actions run #27 / ID 44725957133](https://github.com/Mahirabsar2/chessbuddy/actions/runs/44725957133), commit `c217a62bf377849848e032ef5a38d00b781c236b`: **SUCCESS**, 2026-11-20.
-- All five split source ZIP integrity checks passed.
-- Stockfish reassembly/hash verification passed: `0470a60d55495faaa56fa4a938569abdbeb80cd6b4c12dcc4efc139a11bd6`.
-- JavaScript logic tests: **103/103 passed** across 11 suites; rebuild startup/home/version/avatar smoke check passed.
-- Java policy test: `OK PolicyTest`.
-- Gradle `assembleRelease`: **BUILD SUCCESSFUL**.
-- APK signature verification passed for v1 and v2. Downloaded APK manifest independently confirms package `com.chessbuddy`, versionName `3.0.0`, versionCode `10027`.
-- APK includes arm64 `libstockfish.so`, `liblc0.so`, `libchessbuddy_core.so`, and `libc++_shared.so`.
-- This proves a successful CI candidate build, not a production release or physical-device verification.
+## Latest verified CI candidate
+- [GitHub Actions run #98 / ID 44898901503](https://github.com/Mahirabsar2/chessbuddy/actions/runs/44898901503), commit da20f25c289970e887517a2eb8209d7ed0450ea4: **SUCCESS**, 2026-11-21.
+- All five input ZIP integrity checks, source extraction and overlays passed.
+- Rust JNI core, Lc0/BLAS and Maia runtime built; nine-model Maia manifest validated; Stockfish reassembly/hash verification passed (0470a60d55495faaa56fa4a938569abdbeb80cd6b4c12dcc4efc139a11bd6). Native ARM64 checks passed for Stockfish, Lc0 and ChessBuddy core.
+- Character portraits and voice media were installed and checked.
+- JavaScript logic suite: **103/103 passed** across 11 suites. Additional checks passed for online/realtime subscriptions, Puzzle Rush (8 FENs), Study Lab (9 courses, 128 legal half-moves, 4 tablebase endgames), repertoire/gambit (101 opening lines, 49 gambit/mating courses, 372 legal plies, 960 Chess960 layouts), five-tab navigation, Game Review layout, startup auth and mobile Profile/Stats/Settings/responsive checks.
+- Java policy test: OK PolicyTest.
+- Gradle assembleRelease: **BUILD SUCCESSFUL**. APK signature verification passed. APK size: 82,699,444 bytes. Workflow checks the Gradle source for versionName 1.0.0 but does not independently assert packaged APK package/version metadata.
+- Run #97 failed at tests/logic/mobile-experience.test.js:49 due to a JavaScript string-quoting SyntaxError. Commit da20f25 corrected the test string; run #98 passed.
 
-## Artifacts from run #27
-- `ChessBuddy-3.0.0-release-apk`, artifact ID `14622884616`, 81,495,901 bytes; contains only `ChessBuddy-3.0.0-release.apk`.
-- `ChessBuddy-3.0.0-extracted-source`, artifact ID `14623243658`, 164,110,532 bytes; contains only `chessbuddy-3.0.0-source.tar.gz` (198 files), captured after repair overlay and Stockfish reassembly.
-- APK SHA-256: `021e9e39ef4a05e96c14669a036fa209fc385cd9f2077f0d567e77a8d6410bd9`.
-- Source tar.gz SHA-256: `ec0c99ca63ccba944b17373b1d99f9595c51eb581f5a60c47e696fa78d2bd348`.
-- Artifact ZIP digests: APK `f281aa4d94f71a6345bb4faedd2627f94ab389747dc512eca0cdb436d3a8e008`; source `76510cc71040d88e1d2510733a183d9e25ac9eb2781a0df40fba31a7e29e1487`.
-- **Release packaging is not compliant yet:** APK and source are separate artifacts; source is tar.gz, not the required exact matching source ZIP. There is no single combined APK + source ZIP + provenance/checksum artifact.
+## Artifacts from run #98
+- Preview APK artifact: ChessBuddy-NextGen-1.0.0-preview-apk, ID 14705436740 (82,614,721 bytes; contained APK is 82,699,444 bytes).
+- Extracted-source artifact: ChessBuddy-NextGen-1.0.0-extracted-source, ID 14704304757 (224,093,818 bytes), containing chessbuddy-nextgen-1.0.0-source.tar.gz.
+- [Preview release](https://github.com/Mahirabsar2/chessbuddy/releases/tag/nextgen-1.0.0-preview-build98) contains the preview APK and its SHA-256 file.
+- **Release packaging is not compliant:** APK and source are separate artifacts; source is tar.gz, not the required exact matching source ZIP; no combined APK + source ZIP + provenance/checksum artifact exists.
 
 ## Implemented in source; runtime verification still needed
-- Play/Coach/Archive/Settings navigation, human-vs-AI and AI-vs-AI mode selection, Stockfish and Maia/Lc0 paths.
-- Claude and OpenAI-compatible provider configuration and AES-GCM API-key storage backed by Android Keystore; writes fail closed if encryption is unavailable.
-- Legal-move/perft and provider request tests are present. They do not verify touch-selection behavior, real provider calls, or key persistence on a physical device.
-- Current repair overlay makes startup authentication mandatory and hides the offline guest path; account/session restoration needs live backend/device verification.
-- A filename scan found no obvious keystore or environment-secret files in the extracted source. A full content-based secret scan remains outstanding.
+- Source README describes native Stockfish, human-vs-AI, AI-vs-AI, board interaction, Claude/OpenAI-compatible model settings and Android Keystore-backed API-key storage.
+- CI tests legal-move generation/perft, AI move validation, engine behavior, provider request logic, tab/navigation structure, mobile settings/profile checks and several study/puzzle features.
+- These checks do not prove touch-based piece selection, special-move UX or full play modes on a physical Android device. Live provider calls and API-key save/reload are also unverified.
 
 ## Blockers / verification gaps
-- Exact matching source ZIP is not bundled with the APK; two separate artifacts were uploaded.
-- Signing uses a temporary CI-generated key, unsuitable for stable update installs.
-- Workflow does not assert APK package/version metadata before upload; the downloaded APK was checked independently after the run.
-- `tests/run-all.js` runs pure Node logic tests. The separate `tests/ui/ui.test.js` is not invoked; no Playwright/browser UI or physical Android test was run.
-- Piece-selection UX, on-device special moves, both play modes end-to-end, live OpenAI/Claude calls and key save/reload, Supabase auth/profile/session restore, and two-device online play remain unverified.
-- Main CI remains pinned to v0.4.0. The 3.0.0 branch still carries 2.0.0 source/document labels.
-- No production release is certified.
+- No exact matching source ZIP beside the APK; no combined release artifact.
+- Persistent signing secrets are empty. Run #98 used a temporary preview keystore; stable release publication was skipped.
+- No Playwright/browser UI suite or physical Android-device test was run.
+- Piece-selection touch behavior, on-device special moves, human-vs-AI and AI-vs-AI end-to-end, live OpenAI/Claude requests and encrypted key persistence remain unverified.
+- APK package/version/versionCode are not independently asserted from the packaged manifest.
+- Full content-based source secret/keystore audit remains outstanding.
+- Version labels remain inconsistent; main CI remains v0.4.0.
 
 ## Exact next steps
-1. Generate a deterministic complete source ZIP from the exact post-repair, Stockfish-reassembled tree used by Gradle.
-2. Bundle that ZIP, the verified APK, provenance, APK/source SHA-256 values and a verification report into one artifact; fail CI if any required file is missing.
-3. Add an in-workflow assertion for package `com.chessbuddy`, versionName `3.0.0`, and expected versionCode.
-4. Use a persistent private signing key from GitHub Secrets; never commit or expose signing material.
-5. Run browser UI tests on a supported runner and physical Android tests for tabs, board selection, special moves, both play modes, provider calls, key persistence and startup authentication.
-6. Perform a full source ZIP secret scan and align 2.0.0/3.0.0 source filenames, changelog and implementation docs.
-7. Keep main's v0.4.0 workflow explicitly labelled legacy or migrate it deliberately.
-8. Do not call this a release until the combined artifact, signing continuity, metadata, checksums and device tests are verified.
+1. Generate a deterministic complete source ZIP from the exact post-overlay/native-rebuilt tree used by Gradle.
+2. Bundle that ZIP, the APK, provenance, APK/source SHA-256 values and verification report into one artifact; fail CI if any required file is missing or a hash differs.
+3. Extract APK metadata and assert package, versionName and versionCode before upload.
+4. Configure one persistent private release keystore through GitHub Secrets and verify signing continuity; keep preview signing separate.
+5. Run Playwright UI tests on a supported runner and install the candidate on a physical Android device.
+6. Verify board selection, captures, castling, en passant, promotion, undo, both play modes, all tabs, OpenAI/Claude requests and encrypted key save/reload.
+7. Audit the final source ZIP for secrets/keystores and align branch, workflow, input ZIP, changelog and app version names. Clearly label or migrate the legacy v0.4.0 main workflow.
+8. Do not call this a production release until the combined exact APK/source-ZIP artifact, metadata, checksums, persistent signing and device tests are verified.
 
 ## Daily records
+- [2026-11-21](PROJECT_LOG_2026-11-21.md)
 - [2026-11-20](PROJECT_LOG_2026-11-20.md)
 - [2026-11-19](PROJECT_LOG_2026-11-19.md)
 - [2026-11-18](PROJECT_LOG_2026-11-18.md)
-- [2026-11-17](PROJECT_LOG_2026-11-17.md)
 - Earlier entries remain in [PROJECT_LOG.md](PROJECT_LOG.md).
