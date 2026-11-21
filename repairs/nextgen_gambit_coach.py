@@ -69,8 +69,8 @@ gambit_markup = r'''      <section class="card gambit-coach-lab" id="gambitCoach
       </section>'''
 replace_once(
     "app/src/main/assets/index.html",
-    '      </section>\n    </section>\n\n    <!-- ================= WATCH -->',
-    '      </section>\n' + gambit_markup + '\n    </section>\n\n    <!-- ================= WATCH -->',
+    '    </section>\n\n    <!-- ================= WATCH',
+    gambit_markup + '\n    </section>\n\n    <!-- ================= WATCH',
     "Learn page Gambit Coach panel"
 )
 
