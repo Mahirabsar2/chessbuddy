@@ -590,7 +590,14 @@ replace_once(
     """    $('btnOpeningExplore').onclick = loadOpeningExplorer;
     $('gambitSearch').oninput = e => populateGambitCourseSelect(e.target.value);
     $('gambitCategoryFilter').onchange = () => populateGambitCourseSelect($('gambitSearch').value);
-    $('gambitCourseSelect').onchange = e => { gambitSelected = e.target.value; gambitRun = null; updateGambitCourseInfo(); renderGambitCoach(); };
+    $('gambitCourseSelect').onchange = e => {
+      gambitSelected = e.target.value;
+      gambitRun = null;
+      const selectedCourse = gambitCourseList().find(c => c.id === gambitSelected);
+      if (selectedCourse && selectedCourse.side) $('gambitPracticeSide').value = selectedCourse.side;
+      updateGambitCourseInfo();
+      renderGambitCoach();
+    };
     $('gambitPracticeSide').onchange = () => { if (gambitRun) startGambitPractice('practice'); };
     $('gambitPracticeMode').onchange = () => { if (gambitRun) startGambitPractice($('gambitPracticeMode').value); };
     $('btnGambitPractice').onclick = () => { $('gambitPracticeMode').value = 'practice'; startGambitPractice('practice'); };
