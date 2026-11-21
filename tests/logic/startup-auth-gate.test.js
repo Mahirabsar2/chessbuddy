@@ -1,0 +1,17 @@
+const assert = require('assert');
+const fs = require('fs');
+const html = fs.readFileSync('app/src/main/assets/index.html', 'utf8');
+const app = fs.readFileSync('app/src/main/assets/js/app.js', 'utf8');
+const css = fs.readFileSync('app/src/main/assets/css/app.css', 'utf8');
+const native = fs.readFileSync('app/src/main/java/com/chessbuddy/NativeBridge.java', 'utf8');
+const secret = fs.readFileSync('app/src/main/java/com/chessbuddy/SecretStore.java', 'utf8');
+assert(/let onlineAccountMode = 'signup'/.test(app), 'fresh launch defaults to signup');
+assert(/document\.body\.classList\.add\('auth-required'\)/.test(app), 'fresh launch activates the auth gate');
+assert(/const restoreTask = showPlayScreen\('online'\)/.test(app), 'startup checks the saved session before unlocking the app');
+assert(/if \(Online\.signedIn\(\)\) unlockAuthenticatedApp\(\)/.test(app), 'only a restored valid session unlocks the app');
+assert(/id="onlineGuest"[^>]*hidden/.test(html), 'guest access is not shown on the signup-only first screen');
+assert(/body\.auth-required #onlineGuest\{display:none!important\}/.test(css), 'guest entry remains hidden while auth gate is active');
+assert(native.includes('saveRefreshToken'), 'native auth persists the refresh token');
+assert(secret.includes('AndroidKeyStore') && secret.includes('AES/GCM/NoPadding'), 'refresh tokens use Android Keystore-backed authenticated encryption');
+assert(!/localStorage\.setItem\([^\n]*(refresh|access)_token/i.test(app + native), 'auth tokens are not written to web localStorage');
+console.log('OK startup auth: signup-only cold launch and encrypted refresh-session restoration');
