@@ -59,6 +59,7 @@ jobs:
           python3 repairs/nextgen_review_ui.py
           python3 repairs/nextgen_content_tabs.py
           python3 repairs/nextgen_maia_all9.py
+          python3 repairs/nextgen_media_assets.py
           node --check app/src/main/assets/js/app.js
           node --check app/src/main/assets/js/lichess.js
           node --check app/src/main/assets/js/updater.js
@@ -96,6 +97,65 @@ jobs:
 
       - name: Reassemble and verify Stockfish
         run: bash scripts/reassemble_stockfish.sh .
+
+      - name: Download and package original character media
+        env:
+          GH_TOKEN: \${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="chessbuddy-character-media-v1"
+          ASSET_DIR="app/src/main/assets"
+          MEDIA_ROOT="$RUNNER_TEMP/character-media"
+          mkdir -p "$MEDIA_ROOT"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release download "$TAG" --pattern character-media-pack.zip --dir "$MEDIA_ROOT"
+          else
+            mkdir -p "$MEDIA_ROOT/media/avatars" "$MEDIA_ROOT/media/voices"
+            curl -fL --retry 2 --silent --show-error "https://elevenlabsusercontent.com/database/workspace/30106093f1234a5c906777479e193826/content_generation/hwhIZhWrHZybOge29F5a/XB4UZtJ0E3IGTDjUpLYL/content.jpg?Expires=1795251600&KeyName=assets-cdn-key-1&Signature=ULI0m0KlyTzae1A9n3eD_G1T8mY=" -o "$MEDIA_ROOT/media/avatars/mittens.jpg"
+            curl -fL --retry 2 --silent --show-error "https://elevenlabsusercontent.com/database/workspace/30106093f1234a5c906777479e193826/content_generation/wWxiTRJbGnIEzLh4AaJB/ztbYoQp1gY0SV5le8pve/content.jpg?Expires=1795251600&KeyName=assets-cdn-key-1&Signature=bV9XO-M8vRvSxEdLm9UeVy4IUdE=" -o "$MEDIA_ROOT/portrait-sheet.jpg"
+            curl -fL --retry 2 --silent --show-error "https://elevenlabsusercontent.com/database/workspace/30106093f1234a5c906777479e193826/content_generation/IO9UVokpBgetC3AbWaR4/Y7U9Mo1pLOQM52jLHMhl/content.mp3?Expires=1795251600&KeyName=assets-cdn-key-1&Signature=E8ief0w0ugunOwcsjmVJgWKnbiQ=" -o "$MEDIA_ROOT/media/voices/mittens.mp3"
+            curl -fL --retry 2 --silent --show-error "https://elevenlabsusercontent.com/database/workspace/30106093f1234a5c906777479e193826/content_generation/aXAXrNIADWHaz4z3Um7h/Xc2mMGDVCoBi5Iod5bt9/content.mp3?Expires=1795251600&KeyName=assets-cdn-key-1&Signature=8roiFEVMY_3cXRnp5ZuxUgCBS4Y=" -o "$MEDIA_ROOT/media/voices/streamer.mp3"
+            curl -fL --retry 2 --silent --show-error "https://elevenlabsusercontent.com/database/workspace/30106093f1234a5c906777479e193826/content_generation/ZiPTx1yLGs0XYjX7VSrO/YOCNTjNEQynRldVk3Wgg/content.mp3?Expires=1795251600&KeyName=assets-cdn-key-1&Signature=0P5er-hrS2e5A8SUslYGJqhotkw=" -o "$MEDIA_ROOT/media/voices/coach.mp3"
+            curl -fL --retry 2 --silent --show-error "https://elevenlabsusercontent.com/database/workspace/30106093f1234a5c906777479e193826/content_generation/8rDLDqa2DxFUDrgB4bHw/PmpSgDrv118g5FeIC2BX/content.mp3?Expires=1795251600&KeyName=assets-cdn-key-1&Signature=NqTJbYWFnCoWMycpOjKyycVNeks=" -o "$MEDIA_ROOT/media/voices/veteran.mp3"
+            sudo apt-get update
+            sudo apt-get install -y python3-pil zip
+            python3 - "$MEDIA_ROOT/portrait-sheet.jpg" "$MEDIA_ROOT/media/avatars" <<'PY'
+          from PIL import Image
+          import sys
+          src, dest = sys.argv[1], sys.argv[2]
+          im = Image.open(src).convert("RGB")
+          w, h = im.size
+          if w < 400 or h < 400 or abs(w-h) > 8:
+              raise SystemExit("Unexpected four-avatar sheet dimensions: %r" % (im.size,))
+          boxes = {
+              "streamer": (0, 0, w//2, h//2),
+              "coach": (w//2, 0, w, h//2),
+              "veteran": (0, h//2, w//2, h),
+              "prodigy": (w//2, h//2, w, h),
+          }
+          for name, box in boxes.items():
+              im.crop(box).resize((512,512), Image.Resampling.LANCZOS).save(dest + "/" + name + ".jpg", "JPEG", quality=92, optimize=True)
+          PY
+            cat > "$MEDIA_ROOT/MEDIA_NOTES.txt" <<'TXT'
+          ChessBuddy original character media pack v1.
+          Media generated for ChessBuddy using ElevenLabs Creative Studio.
+          Portraits are original, not public-figure likenesses.
+          Voice clips are short archetype samples; no real-person voice cloning.
+          TXT
+            (cd "$MEDIA_ROOT" && zip -qr "$MEDIA_ROOT/character-media-pack.zip" media MEDIA_NOTES.txt)
+            gh release create "$TAG" "$MEDIA_ROOT/character-media-pack.zip" --prerelease --title "ChessBuddy Character Media Pack v1" --notes "Original ChessBuddy bot portraits and short archetype voice clips. Reused by future Next Gen builds."
+          fi
+          if [ ! -f "$MEDIA_ROOT/character-media-pack.zip" ]; then
+            test -s "$MEDIA_ROOT/character-media-pack.zip"
+          fi
+          unzip -oq "$MEDIA_ROOT/character-media-pack.zip" -d "$ASSET_DIR"
+          for f in media/avatars/mittens.jpg media/avatars/streamer.jpg media/avatars/coach.jpg media/avatars/veteran.jpg media/avatars/prodigy.jpg media/voices/mittens.mp3 media/voices/streamer.mp3 media/voices/coach.mp3 media/voices/veteran.mp3; do
+            test -s "$ASSET_DIR/$f" || { echo "Missing character media asset: $f"; exit 1; }
+          done
+          (cd "$ASSET_DIR" && sha256sum media/avatars/*.jpg media/voices/*.mp3 > media/CHARACTER_MEDIA_SHA256SUMS.txt)
+          echo "Original character media pack installed into Android assets."
+          
 
       - name: Verify all native ARM64 engines and core
         shell: bash
