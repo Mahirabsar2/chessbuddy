@@ -17,6 +17,7 @@ Last checked: 2026-11-21. This is a factual implementation checklist, not a prom
 - [x] Nine official Maia-1 model choices (1100–1900) are represented in the manifest and downloaded on demand with integrity verification.
 - [x] Stockfish, Rust chess core and Lc0/BLAS ARM64 source-build scripts are present.
 - [x] In-app updater checks stable GitHub releases, verifies SHA-256 and starts a background download.
+- [x] Regression tests added for five-tab content, Maia native configuration, startup auth persistence, and Game Review button sizing.
 
 ## Current verification status
 
@@ -24,7 +25,7 @@ Last checked: 2026-11-21. This is a factual implementation checklist, not a prom
 - [x] Native Rust ARM64 build succeeded in build 43.
 - [x] Lc0 ARM64 build succeeded in build 43; source archives and provenance were emitted.
 - [x] A Maia startup regression was identified and patched: the app no longer passes an unsupported `--search-algorithm=policyhead` CLI argument; policyhead is compiled as Lc0's default.
-- [ ] Re-run the complete CI pipeline after the native verification-step ordering fix.
+- [ ] Re-run the complete CI pipeline after the native verification-step ordering fix (build 46 is currently running).
 - [ ] Run the updated regression suite against the exact final source snapshot.
 - [ ] Install and test on a physical Android device, including a second device for online games.
 - [ ] Confirm Maia model download, UCI handshake and legal move output on-device.
