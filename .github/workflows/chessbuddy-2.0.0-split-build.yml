@@ -58,7 +58,7 @@ jobs:
           python3 repairs/nextgen_updater_and_challenges.py
           python3 repairs/nextgen_review_ui.py
           python3 repairs/nextgen_content_tabs.py
-          python3 repairs/normalize_maia_manifest.py
+          python3 repairs/nextgen_maia_all9.py
           node --check app/src/main/assets/js/app.js
           node --check app/src/main/assets/js/lichess.js
           node --check app/src/main/assets/js/updater.js
@@ -90,6 +90,9 @@ jobs:
 
       - name: Rebuild Lc0 / Maia runtime from pinned source
         run: bash scripts/build_lc0_android.sh
+
+      - name: Normalize and validate generated nine-model Maia manifest
+        run: python3 repairs/normalize_maia_manifest.py
 
       - name: Reassemble and verify Stockfish
         run: bash scripts/reassemble_stockfish.sh .
