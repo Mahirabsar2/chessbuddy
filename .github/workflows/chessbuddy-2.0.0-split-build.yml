@@ -69,6 +69,38 @@ jobs:
           grep -q 'view-more' app/src/main/assets/index.html
           grep -q "versionName '1.0.0'" app/build.gradle
 
+      - name: Install Android NDK and Rust toolchain
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'ndk;27.2.12479018'
+
+      - name: Set up Rust for Android ARM64
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Install native build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git pkg-config python3-venv protobuf-compiler
+
+      - name: Rebuild Rust JNI core from source
+        run: bash scripts/build_rust_android.sh
+
+      - name: Rebuild Lc0 / Maia runtime from pinned source
+        run: bash scripts/build_lc0_android.sh
+
+      - name: Verify all native ARM64 engines and core
+        shell: bash
+        run: |
+          set -euo pipefail
+          for binary in app/src/main/jniLibs/arm64-v8a/libstockfish.so app/src/main/jniLibs/arm64-v8a/liblc0.so app/src/main/jniLibs/arm64-v8a/libchessbuddy_core.so; do
+            test -s "$binary"
+            file "$binary" | grep -q 'ARM aarch64'
+          done
+          test -s build-info/lc0.txt
+          test -s build-info/stockfish.txt || test -s build-info/STOCKFISH_PROVENANCE.txt
+
       - name: Reassemble and verify Stockfish
         run: bash scripts/reassemble_stockfish.sh .
 
