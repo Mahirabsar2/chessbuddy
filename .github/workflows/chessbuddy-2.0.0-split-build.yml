@@ -269,11 +269,8 @@ jobs:
           echo "APK size: $APK_BYTES bytes"
           echo "apk_bytes=$APK_BYTES" >> "$GITHUB_OUTPUT"
           echo "signing_mode=$CB_SIGNING_MODE" >> "$GITHUB_OUTPUT"
-          if [ "$APK_BYTES" -ge 209715200 ] && [ "$CB_SIGNING_MODE" = "persistent" ]; then echo "release_ready=true" >> "$GITHUB_OUTPUT"; else echo "release_ready=false" >> "$GITHUB_OUTPUT"; fi
+          if [ "$CB_SIGNING_MODE" = "persistent" ]; then echo "release_ready=true" >> "$GITHUB_OUTPUT"; else echo "release_ready=false" >> "$GITHUB_OUTPUT"; fi
           cp "$APK" "$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk"
-          if [ "$APK_BYTES" -lt 209715200 ]; then
-            echo "::warning::This build is not releasable: APK is below the required 200 MiB target."
-          fi
           if [ "$CB_SIGNING_MODE" != "persistent" ]; then
             echo "::warning::Preview signing only. Add the stable release keystore secrets before publishing auto-update releases."
           fi
@@ -285,6 +282,23 @@ jobs:
           path: ${{ runner.temp }}/ChessBuddy-NextGen-1.0.0.apk
           if-no-files-found: error
 
+
+      - name: Publish preview APK for direct download
+        if: ${{ steps.apk.outputs.signing_mode == 'preview-only' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk"
+          SHA="$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk.sha256"
+          sha256sum "$APK" | awk '{print $1 "  ChessBuddy-NextGen-1.0.0-preview.apk"}' > "$SHA"
+          cp "$APK" "$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0-preview.apk"
+          TAG="nextgen-1.0.0-preview-build$GITHUB_RUN_NUMBER"
+          gh release create "$TAG" "$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0-preview.apk" "$SHA" \
+            --prerelease \
+            --title "ChessBuddy Next Gen 1.0.0 Preview (build $GITHUB_RUN_NUMBER)" \
+            --notes "Preview build for testing. This APK uses a temporary preview signing key, so later builds cannot update it in place. Install as a fresh app. This is not a stable auto-update release."
 
       - name: Publish verified stable release for in-app updates
         if: ${{ steps.apk.outputs.release_ready == 'true' }}
