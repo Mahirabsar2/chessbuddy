@@ -91,6 +91,9 @@ jobs:
       - name: Rebuild Lc0 / Maia runtime from pinned source
         run: bash scripts/build_lc0_android.sh
 
+      - name: Reassemble and verify Stockfish
+        run: bash scripts/reassemble_stockfish.sh .
+
       - name: Verify all native ARM64 engines and core
         shell: bash
         run: |
@@ -102,8 +105,6 @@ jobs:
           test -s build-info/lc0.txt
           test -s build-info/stockfish.txt || test -s build-info/STOCKFISH_PROVENANCE.txt
 
-      - name: Reassemble and verify Stockfish
-        run: bash scripts/reassemble_stockfish.sh .
 
       - name: Package extracted source for inspection
         shell: bash
