@@ -58,6 +58,7 @@ jobs:
           python3 repairs/nextgen_updater_and_challenges.py
           python3 repairs/nextgen_review_ui.py
           python3 repairs/nextgen_content_tabs.py
+          python3 repairs/normalize_maia_manifest.py
           node --check app/src/main/assets/js/app.js
           node --check app/src/main/assets/js/lichess.js
           node --check app/src/main/assets/js/updater.js
