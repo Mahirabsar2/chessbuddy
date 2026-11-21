@@ -49,20 +49,6 @@ jobs:
       - name: Extract project source
         run: unzip -oq ChessBuddy-2.0.0-Part5-Source.zip -d .
 
-      - name: Inspect online client before realtime integration
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "=== ONLINE JS FILES ==="
-          find app/src/main/assets/js -maxdepth 1 -type f -iname '*online*' -print
-          for f in app/src/main/assets/js/*online*.js; do
-            [ -f "$f" ] || continue
-            echo "=== $f ==="
-            sed -n '1,360p' "$f"
-          done
-          echo "=== APP ONLINE POLLING REFERENCES ==="
-          grep -nE 'onlinePollTimer|pollOnline|loadGame|refreshOnlineGame|Online\.' app/src/main/assets/js/app.js | head -180 || true
-
       - name: Apply reviewed repair and Next Gen overlays
         shell: bash
         run: |
@@ -75,8 +61,10 @@ jobs:
           python3 repairs/nextgen_content_tabs.py
           python3 repairs/nextgen_maia_all9.py
           python3 repairs/nextgen_media_assets.py
+          python3 repairs/nextgen_realtime.py
           node --check app/src/main/assets/js/app.js
           node --check app/src/main/assets/js/lichess.js
+          node --check app/src/main/assets/js/online.js
           node --check app/src/main/assets/js/updater.js
           grep -q 'rv-summary-actions' app/src/main/assets/css/app.css
           grep -q 'rv-action-icon' app/src/main/assets/js/app.js
