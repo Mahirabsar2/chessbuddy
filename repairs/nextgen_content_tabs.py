@@ -54,7 +54,7 @@ replace_once(
           <button class="btn" id="btnPuzzleReset" type="button" disabled>Reset</button>
         </div>
         <div class="puzzle-rush-panel">
-          <div><span class="eyebrow">PUZZLE RUSH</span><b id="puzzleRushClock">3:00</b><small id="puzzleRushScore">Solve as many as you can before time runs out.</small></div>
+          <div><span class="eyebrow">PUZZLE RUSH</span><b id="puzzleRushClock">3:00</b><small id="puzzleRushScore">Solve as many as you can before time runs out.</small><small id="puzzleRushBest">Personal best — 3 min: 0 · 5 min: 0</small></div>
           <div class="puzzle-rush-actions"><button class="btn small" id="btnPuzzleRush3" type="button">3 MIN</button><button class="btn small" id="btnPuzzleRush5" type="button">5 MIN</button><button class="btn small" id="btnPuzzleRushStop" type="button" hidden>END</button></div>
         </div>
       </div>
@@ -245,6 +245,8 @@ js = """
   function updatePuzzleRushDisplay() {
     const clock = $('puzzleRushClock'), score = $('puzzleRushScore');
     if (!clock || !score) return;
+    const best = $('puzzleRushBest');
+    if (best) best.textContent = 'Personal best — 3 min: ' + Number(settings.progress.puzzleRushBest3 || 0) + ' · 5 min: ' + Number(settings.progress.puzzleRushBest5 || 0);
     if (!puzzleRush) { clock.textContent = '3:00'; score.textContent = 'Solve as many as you can before time runs out.'; return; }
     const left = Math.max(0, Math.ceil((puzzleRush.endsAt - Date.now()) / 1000));
     clock.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
@@ -347,6 +349,7 @@ js = """
   function puzzleBoardTap(event) {
     const ps = puzzleSession;
     const square = event.target && event.target.closest ? event.target.closest('.sq[data-sq]') : null;
+    if (puzzleRush && Date.now() >= puzzleRush.endsAt) { finishPuzzleRush(); return; }
     if (!ps || ps.completed || !square) return;
     const sq = square.getAttribute('data-sq'), piece = ps.game.get(sq), turn = ps.game.turn();
     if (!ps.selected) {
@@ -529,7 +532,7 @@ css = """
 .puzzle-rush-panel { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px; padding:12px; border-radius:12px; background:rgba(255,255,255,.045); }
 .puzzle-rush-panel > div:first-child { display:grid; gap:3px; }
 #puzzleRushClock { font-variant-numeric:tabular-nums; font-size:26px; font-weight:800; }
-#puzzleRushScore { color:var(--muted,#aaa); font-size:12px; }
+#puzzleRushScore, #puzzleRushBest { color:var(--muted,#aaa); font-size:12px; }
 .puzzle-rush-actions { display:flex; flex-wrap:wrap; gap:6px; }
 .puzzle-actions { display:grid; grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(0,1fr)); gap:8px; }
 .puzzle-actions .btn { min-width:0; padding:8px 7px; font-size:12px; }
