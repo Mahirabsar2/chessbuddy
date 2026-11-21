@@ -46,11 +46,11 @@ for (const fragment of [
 // Practice ratings are explicitly local and never count online, untimed or variant games.
 assert(app.includes('function practiceBucketForTimeControl()'), 'time controls map to rating buckets');
 assert(app.includes('function updatePracticeRating()'), 'local practice Elo calculation exists');
-assert(app.includes('ctx.online || modeOf() !== \\'hva\\' || activeGameVariant !== \\'standard\\''), 'online, two-human and variants are excluded');
+assert(app.includes("ctx.online || modeOf() !== 'hva' || activeGameVariant !== 'standard'"), 'online, two-human and variants are excluded');
 assert(app.includes('if (!bucket) return null;'), 'untimed games are excluded');
 assert(app.includes('practiceRatingHistory'), 'rating history is persisted');
 assert(app.includes('gameKey'), 'a completed game cannot rate twice');
-assert(app.includes('saveSettings();\\n    return entry;'), 'local ratings are saved');
+assert(app.includes('saveSettings();\n    return entry;'), 'local ratings are saved');
 assert(app.includes('practiceRating:practiceRatingChange'), 'archive stores local rating deltas');
 assert(html.includes('not Chess.com, FIDE, or official online ratings'), 'profile labels local ratings honestly');
 
