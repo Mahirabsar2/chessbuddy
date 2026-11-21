@@ -64,7 +64,7 @@ more = r'''    <!-- ================= MORE ================= -->
       <div class="more-action-grid">
         <button class="more-action" id="moreStats" type="button"><span class="more-action-icon" data-ic="chart"></span><b>Stats &amp; Ratings</b><small>Rating history and performance</small></button>
         <button class="more-action" id="moreOnline" type="button"><span class="more-action-icon" data-ic="users"></span><b>Friends &amp; Online</b><small>Challenges and player list</small></button>
-        <button class="more-action" id="moreArchive" type="button"><span class="more-action-icon" data-ic="history"></span><b>Game Archive</b><small>Replay, import and export</small></button>
+        <button class="more-action" id="moreArchive" type="button"><span class="more-action-icon" data-ic="tHist"></span><b>Game Archive</b><small>Replay, import and export</small></button>
         <button class="more-action" id="moreCoach" type="button"><span class="more-action-icon" data-ic="spark"></span><b>Coach &amp; Analysis</b><small>Review games and positions</small></button>
       </div>
       <div class="more-section-title"><h2>Study</h2></div>
@@ -76,7 +76,7 @@ more = r'''    <!-- ================= MORE ================= -->
       </div>
       <div class="more-section-title"><h2>App</h2></div>
       <div class="card more-settings-card">
-        <button class="row-btn" id="moreSettings" type="button"><span class="ri" data-ic="settings"></span><span class="rt"><b>Settings</b><small>Board, gameplay, engine, coach, data and privacy</small></span><span class="rc" data-ic="chev"></span></button>
+        <button class="row-btn" id="moreSettings" type="button"><span class="ri" data-ic="tSet"></span><span class="rt"><b>Settings</b><small>Board, gameplay, engine, coach, data and privacy</small></span><span class="rc" data-ic="chev"></span></button>
         <button class="row-btn" id="moreAbout" type="button"><span class="ri" data-ic="info"></span><span class="rt"><b>About ChessBuddy</b><small>Version, credits and release information</small></span><span class="rc" data-ic="chev"></span></button>
       </div>
     </section>'''
@@ -236,6 +236,7 @@ rating_logic = r'''
     };
     history.push(entry);
     if (history.length > 120) history.splice(0, history.length - 120);
+    saveSettings();
     return entry;
   }
   function localCompletedGames() {
