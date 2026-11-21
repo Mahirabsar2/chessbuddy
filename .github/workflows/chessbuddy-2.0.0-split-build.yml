@@ -204,6 +204,9 @@ jobs:
       - name: Run JavaScript tests
         run: node tests/run-all.js
 
+      - name: Verify authenticated Realtime game subscriptions
+        run: node tests/logic/online-realtime.test.js
+
       - name: Run Java policy tests
         run: bash tests/java/run.sh
 
