@@ -218,10 +218,10 @@ js = """
     { id:'mate-01', fen:'7k/8/5KQ1/8/8/8/8/8 w - - 0 1', solution:['g6g7'], rating:800, themes:['mateIn1'] },
     { id:'mate-02', fen:'7k/5K2/8/6Q1/8/8/8/8 w - - 0 1', solution:['g5g7'], rating:850, themes:['mateIn1'] },
     { id:'mate-03', fen:'7k/5K2/8/8/6Q1/8/8/8 w - - 0 1', solution:['g4g7'], rating:900, themes:['mateIn1'] },
-    { id:'mate-04', fen:'k7/8/2KQ4/8/8/8/8/8 w - - 0 1', solution:['b6b7'], rating:800, themes:['mateIn1'] },
+    { id:'mate-04', fen:'k7/8/1QK5/8/8/8/8/8 w - - 0 1', solution:['b6b7'], rating:800, themes:['mateIn1'] },
     { id:'mate-05', fen:'8/8/8/8/8/5KQ1/8/7k w - - 0 1', solution:['g3g2'], rating:850, themes:['mateIn1'] },
-    { id:'mate-06', fen:'8/8/8/8/5K2/6Q1/8/7k w - - 0 1', solution:['g3g2'], rating:900, themes:['mateIn1'] },
-    { id:'mate-07', fen:'8/8/8/8/8/2KQ4/8/k7 w - - 0 1', solution:['b3b2'], rating:850, themes:['mateIn1'] },
+    { id:'mate-06', fen:'8/8/8/8/6Q1/5K2/8/7k w - - 0 1', solution:['g4g2'], rating:900, themes:['mateIn1'] },
+    { id:'mate-07', fen:'8/8/8/8/8/1QK5/8/k7 w - - 0 1', solution:['b3b2'], rating:850, themes:['mateIn1'] },
     { id:'mate-08', fen:'k7/2K5/8/1Q6/8/8/8/8 w - - 0 1', solution:['b5b7'], rating:950, themes:['mateIn1'] }
   ];
   let rushPuzzleBag = [];
