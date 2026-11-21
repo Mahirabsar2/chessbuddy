@@ -20,24 +20,8 @@ const courses = vm.runInNewContext(match[1]);
 assert(courses.length >= 8, 'at least eight opening courses are available');
 assert.strictEqual(new Set(courses.map(c => c.id)).size, courses.length, 'course IDs are unique');
 
-const jsDir = path.dirname(appPath);
-const candidates = fs.readdirSync(jsDir).filter(name => /chess/i.test(name) && /\.js$/i.test(name));
-let Chess = null;
-for (const name of candidates) {
-  const filename = path.join(jsDir, name);
-  const moduleShim = { exports: {} };
-  const sandbox = { module: moduleShim, exports: moduleShim.exports, console };
-  sandbox.globalThis = sandbox;
-  sandbox.window = sandbox;
-  sandbox.self = sandbox;
-  try {
-    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), sandbox, { filename });
-    const exported = moduleShim.exports;
-    const possible = exported.Chess || exported.default || exported || sandbox.Chess || sandbox.window.Chess;
-    if (typeof possible === 'function') { Chess = possible; break; }
-  } catch (_) { /* Try the next bundled chess implementation candidate. */ }
-}
-assert(Chess, 'the bundled rules engine is available to validate opening courses');
+const Chess = require('../helpers/load-chessjs')().Chess;
+assert(Chess, 'the bundled chess rules engine is available to validate repertoire courses');
 
 for (const course of courses) {
   assert(course.name && course.eco && course.focus, course.id + ': descriptive course metadata exists');
