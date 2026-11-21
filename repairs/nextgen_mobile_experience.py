@@ -220,6 +220,8 @@ rating_logic = r'''
     const ratings = progress.practiceRatings || (progress.practiceRatings = {});
     const counts = progress.practiceRatingGames || (progress.practiceRatingGames = {});
     const history = progress.practiceRatingHistory || (progress.practiceRatingHistory = []);
+    const gameKey = String(ctx.startedAt || 0) + '|' + game.history().join(' ');
+    if (history.some(item => item && item.gameKey === gameKey)) return null;
     const before = practiceRating(bucket), opponentRating = Math.max(300, Math.min(3500, Number(opponent.elo || (opponent.engine === 'lc0' ? 1100 : 1800))));
     const score = over.winner === side ? 1 : over.winner ? 0 : 0.5;
     const expected = 1 / (1 + Math.pow(10, (opponentRating - before) / 400));
@@ -230,7 +232,7 @@ rating_logic = r'''
     const peaks = progress.practiceRatingPeaks || (progress.practiceRatingPeaks = {});
     peaks[bucket] = Math.max(Number(peaks[bucket] || 1200), after);
     const entry = {
-      at:new Date().toISOString(), bucket:bucket, before:before, after:after, delta:after-before,
+      at:new Date().toISOString(), gameKey:gameKey, bucket:bucket, before:before, after:after, delta:after-before,
       opponent:String(opponent.name || 'ChessBuddy bot').slice(0,48), opponentRating:opponentRating,
       result:score === 1 ? 'win' : score === 0 ? 'loss' : 'draw', timeControl:settings.play.tc
     };
@@ -400,7 +402,7 @@ renderers = r'''
     const name = localProfileName();
     $('profileQuickName').textContent = name;
     $('profileQuickAvatar').textContent = profileInitial(name);
-    $('profileQuickRating').textContent = 'Rapid ' + practiceRating('rapid');
+    $('profileQuickRating').textContent = 'Local rapid ' + practiceRating('rapid');
   }
 '''
 replace_once(
@@ -568,6 +570,7 @@ css = r'''
   background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:11px 5px; min-width:0;
 }
 .more-stat-strip b,.profile-overview-grid b { font-size:20px; font-variant-numeric:tabular-nums; }
+.profile-overview-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
 .more-stat-strip span,.profile-overview-grid span { font-size:10px; color:var(--muted); text-align:center; }
 .more-section-title,.profile-section-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 2px 9px; }
 .more-section-title h2,.profile-section-head h2 { margin:0; font-size:16px; letter-spacing:-.2px; }
