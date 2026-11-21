@@ -12,6 +12,12 @@ def replace_once(path, old, new, label):
     p.write_text(source.replace(old, new, 1), encoding="utf-8")
 
 online_realtime = r'''
+  var realtimeTokenRefreshers = [];
+  function refreshRealtimeTokens() {
+    realtimeTokenRefreshers.slice().forEach(function (refresh) {
+      try { refresh(); } catch (_) { log('realtime.token_refresh_failed', 'Could not refresh the live game channel token'); }
+    });
+  }
   function subscribeGame(gameId, onChange) {
     var id = String(gameId || '').trim();
     if (!/^[0-9a-f-]{16,64}$/i.test(id)) throw new Error('Invalid online game id.');
@@ -21,7 +27,8 @@ online_realtime = r'''
       return function () {};
     }
     var stopped = false, socket = null, heartbeat = 0, reconnectTimer = 0;
-    var retries = 0, ref = 0, topic = 'realtime:chessbuddy-game:' + id;
+    var retries = 0, ref = 0, joinRef = null, subscriptionIds = [];
+    var topic = 'realtime:chessbuddy-game:' + id;
     function clearSocketTimers() {
       if (heartbeat) { clearInterval(heartbeat); heartbeat = 0; }
       if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = 0; }
@@ -30,6 +37,15 @@ online_realtime = r'''
       if (!target || target.readyState !== 1) return false;
       try { target.send(JSON.stringify(frame)); return true; } catch (_) { return false; }
     }
+    function sendAccessToken() {
+      if (!socket || !joinRef || stopped) return;
+      sendFrame(socket, {
+        topic: topic, event: 'access_token',
+        payload: { access_token: session && session.accessToken || '' },
+        ref: String(++ref), join_ref: joinRef
+      });
+    }
+    realtimeTokenRefreshers.push(sendAccessToken);
     function reconnect() {
       if (stopped || reconnectTimer) return;
       retries = Math.min(retries + 1, 5);
@@ -53,7 +69,8 @@ online_realtime = r'''
       ws.onopen = function () {
         if (stopped || socket !== ws) { try { ws.close(); } catch (_) {} return; }
         retries = 0;
-        var joinRef = String(++ref);
+        joinRef = String(++ref);
+        subscriptionIds = [];
         var filter = 'id=eq.' + id;
         var joined = sendFrame(ws, {
           topic: topic,
@@ -61,7 +78,7 @@ online_realtime = r'''
           payload: {
             config: {
               broadcast: { ack: false, self: false },
-              presence: { key: '' },
+              presence: { enabled: false, key: '' },
               postgres_changes: [{ event: '*', schema: 'public', table: 'chessbuddy_games', filter: filter }],
               private: false
             },
@@ -75,26 +92,51 @@ online_realtime = r'''
           if (socket === ws && ws.readyState === 1)
             sendFrame(ws, { topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++ref) });
         }, 25000);
-        log('realtime.join_sent', 'Subscribed to authenticated updates for one game');
+        log('realtime.join_sent', 'Authenticated game channel join requested');
       };
       ws.onmessage = function (event) {
         if (stopped || socket !== ws) return;
         var frame = parse(event && event.data);
         if (!frame) return;
-        if (frame.event === 'phx_reply' && frame.payload && frame.payload.status === 'error') {
-          log('realtime.join_rejected', 'Server rejected the game subscription; REST polling remains active');
+        if (frame.event === 'phx_reply' && frame.ref === joinRef) {
+          if (!frame.payload || frame.payload.status !== 'ok') {
+            log('realtime.join_rejected', 'Server rejected the game subscription; REST polling remains active');
+            try { ws.close(1011, 'Realtime subscription rejected'); } catch (_) { reconnect(); }
+            return;
+          }
+          var response = frame.payload.response || {};
+          var subscriptions = response.postgres_changes || [];
+          subscriptionIds = subscriptions.map(function (item) { return Number(item.id); }).filter(function (value) { return Number.isFinite(value); });
+          if (!subscriptionIds.length) {
+            log('realtime.join_missing_id', 'Server accepted the channel but returned no Postgres subscription id');
+            try { ws.close(1011, 'Missing subscription id'); } catch (_) { reconnect(); }
+            return;
+          }
+          log('realtime.subscribed', 'Server confirmed the game row subscription');
+          return;
+        }
+        if (frame.event === 'system' && frame.payload && frame.payload.status === 'error') {
+          log('realtime.system_error', 'Supabase Realtime reported a channel error');
+          try { ws.close(1011, 'Realtime system error'); } catch (_) { reconnect(); }
           return;
         }
         if (frame.event !== 'postgres_changes') return;
-        var payload = frame.payload || {}, change = payload.data || payload;
-        var record = change.record || change.new || change;
-        var oldRecord = change.old_record || change.old || {};
-        var recordId = record && record.id || oldRecord && oldRecord.id;
-        if (recordId && String(recordId) !== id) return;
+        var payload = frame.payload || {};
+        var incomingIds = Array.isArray(payload.ids) ? payload.ids.map(Number) : [];
+        if (!subscriptionIds.length || !incomingIds.some(function (value) { return subscriptionIds.indexOf(value) >= 0; })) {
+          log('realtime.subscription_mismatch', 'Incoming change did not match the active join subscription id');
+          try { ws.close(1011, 'Realtime subscription id mismatch'); } catch (_) { reconnect(); }
+          return;
+        }
+        var change = payload.data || {};
+        if ((change.schema && change.schema !== 'public') || (change.table && change.table !== 'chessbuddy_games')) return;
+        var record = change.record || {}, oldRecord = change.old_record || {};
+        var recordId = record.id || oldRecord.id;
+        if (!recordId || String(recordId) !== id) return;
         try {
           onChange({
-            eventType: change.type || change.eventType || 'UPDATE',
-            record: record || {},
+            eventType: change.type || 'UPDATE',
+            record: record,
             oldRecord: oldRecord,
             commitTimestamp: change.commit_timestamp || null
           });
@@ -106,7 +148,7 @@ online_realtime = r'''
       ws.onclose = function () {
         if (socket !== ws) return;
         clearSocketTimers();
-        socket = null;
+        socket = null; joinRef = null; subscriptionIds = [];
         if (!stopped) reconnect();
       };
     }
@@ -116,7 +158,12 @@ online_realtime = r'''
       stopped = true;
       clearSocketTimers();
       var current = socket;
-      socket = null;
+      if (current && joinRef) {
+        sendFrame(current, { topic: topic, event: 'phx_leave', payload: {}, ref: String(++ref), join_ref: joinRef });
+      }
+      socket = null; joinRef = null; subscriptionIds = [];
+      var refreshIndex = realtimeTokenRefreshers.indexOf(sendAccessToken);
+      if (refreshIndex >= 0) realtimeTokenRefreshers.splice(refreshIndex, 1);
       if (current) {
         current.onclose = null; current.onerror = null; current.onmessage = null; current.onopen = null;
         try { current.close(1000, 'ChessBuddy game view closed'); } catch (_) {}
@@ -130,6 +177,12 @@ replace_once(
     "  function signedIn() { return !!(session && session.accessToken && session.user && session.user.id); }\n",
     "  function signedIn() { return !!(session && session.accessToken && session.user && session.user.id); }\n" + online_realtime + "\n",
     "online session helper"
+)
+replace_once(
+    "app/src/main/assets/js/online.js",
+    "      if (data && (data.access_token || data.data || data.session || data.result)) acceptSession(data);\n",
+    "      if (data && (data.access_token || data.data || data.session || data.result)) acceptSession(data);\n      if (operation === 'refresh' && signedIn()) refreshRealtimeTokens();\n",
+    "propagate refreshed Auth token to Realtime"
 )
 replace_once(
     "app/src/main/assets/js/online.js",
