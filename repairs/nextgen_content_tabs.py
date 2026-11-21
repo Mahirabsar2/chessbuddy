@@ -54,10 +54,10 @@ replace_once(
         </div>
         <div class="puzzle-rush-panel">
           <div><span class="eyebrow">PUZZLE RUSH</span><b id="puzzleRushClock">3:00</b><small id="puzzleRushScore">Solve as many as you can before time runs out.</small><small id="puzzleRushBest">Personal best — 3 min: 0 · 5 min: 0</small></div>
-          <div class="puzzle-rush-actions"><button class="btn small" id="btnPuzzleRush3" type="button">3 MIN</button><button class="btn small" id="btnPuzzleRush5" type="button">5 MIN</button><button class="btn small" id="btnPuzzleRushStop" type="button" hidden>END</button></div>
+          <div class="puzzle-rush-actions"><button class="btn small" id="btnPuzzleRush3" type="button">3 MIN</button><button class="btn small" id="btnPuzzleRush5" type="button">5 MIN</button><button class="btn small" id="btnPuzzleSurvival" type="button">SURVIVAL</button><button class="btn small" id="btnPuzzleRushStop" type="button" hidden>END</button></div>
         </div>
       </div>
-      <div class="card"><h3>Training Progress</h3><div class="stat-strip"><div><b id="puzzlesSolvedCount">0</b><span>Puzzles Solved</span></div><div><b id="puzzleLessonsCount">0</b><span>Lessons Completed</span></div></div><p class="muted tiny">Puzzle history and ratings will remain local until a signed-in puzzle profile service is connected.</p></div>
+      <div class="card"><h3>Training Progress</h3><div class="stat-strip"><div><b id="puzzlesSolvedCount">0</b><span>Puzzles Solved</span></div><div><b id="puzzleLessonsCount">0</b><span>Lessons Completed</span></div><div><b id="puzzleDailyStreakCount">0</b><span>Daily Streak</span></div></div><p class="muted tiny">Puzzle history and ratings will remain local until a signed-in puzzle profile service is connected.</p></div>
     </section>
 
     <!-- ================= LEARN ================= -->
@@ -241,6 +241,20 @@ js = """
     const done = Number(settings.progress.puzzlesSolved || 0);
     if ($('puzzlesSolvedCount')) $('puzzlesSolvedCount').textContent = String(done);
     if ($('puzzleLessonsCount')) $('puzzleLessonsCount').textContent = String((settings.progress.completedLessons || []).length);
+    if ($('puzzleDailyStreakCount')) $('puzzleDailyStreakCount').textContent = String(Number(settings.progress.dailyPuzzleStreak || 0));
+  }
+  function localPuzzleDay(date) {
+    return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+  }
+  function recordDailyPuzzleWin(ps) {
+    const p = settings.progress, id = String(ps && ps.data && ps.data.puzzle && ps.data.puzzle.id || '');
+    if (!id || p.lastDailyPuzzleId === id) return;
+    const today = localPuzzleDay(new Date()), yesterday = localPuzzleDay(new Date(Date.now() - 86400000));
+    if (p.lastDailyPuzzleDate === today) return;
+    p.dailyPuzzleStreak = p.lastDailyPuzzleDate === yesterday ? Number(p.dailyPuzzleStreak || 0) + 1 : 1;
+    p.dailyPuzzleBestStreak = Math.max(Number(p.dailyPuzzleBestStreak || 0), p.dailyPuzzleStreak);
+    p.lastDailyPuzzleDate = today;
+    p.lastDailyPuzzleId = id;
   }
   function puzzleStatus(text, kind) {
     const el = $('puzzleStatus');
@@ -267,8 +281,14 @@ js = """
     const clock = $('puzzleRushClock'), score = $('puzzleRushScore');
     if (!clock || !score) return;
     const best = $('puzzleRushBest');
-    if (best) best.textContent = 'Personal best — 3 min: ' + Number(settings.progress.puzzleRushBest3 || 0) + ' · 5 min: ' + Number(settings.progress.puzzleRushBest5 || 0);
-    if (!puzzleRush) { clock.textContent = '3:00'; score.textContent = 'Solve as many as you can before time runs out.'; return; }
+    if (best) best.textContent = 'Best — 3 min: ' + Number(settings.progress.puzzleRushBest3 || 0) + ' · 5 min: ' + Number(settings.progress.puzzleRushBest5 || 0) + ' · Survival: ' + Number(settings.progress.puzzleRushBestSurvival || 0);
+    if (!puzzleRush) { clock.textContent = '3:00'; score.textContent = 'Choose 3 min, 5 min or Survival (3 lives).'; return; }
+    if (puzzleRush.mode === 'survival') {
+      const elapsed = Math.max(0, Math.floor((Date.now() - puzzleRush.startedAt) / 1000));
+      clock.textContent = Math.floor(elapsed / 60) + ':' + String(elapsed % 60).padStart(2, '0');
+      score.textContent = puzzleRush.solved + ' solved · ' + puzzleRush.misses + '/3 mistakes';
+      return;
+    }
     const left = Math.max(0, Math.ceil((puzzleRush.endsAt - Date.now()) / 1000));
     clock.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
     score.textContent = puzzleRush.solved + ' solved · ' + puzzleRush.misses + ' mistakes';
@@ -276,32 +296,33 @@ js = """
   function finishPuzzleRush() {
     if (!puzzleRush) return;
     clearInterval(puzzleRushTick); puzzleRushTick = 0;
-    const result = puzzleRush, key = result.minutes === 3 ? 'puzzleRushBest3' : 'puzzleRushBest5';
+    const result = puzzleRush, key = result.mode === 'survival' ? 'puzzleRushBestSurvival' : (result.minutes === 3 ? 'puzzleRushBest3' : 'puzzleRushBest5');
     const best = Number(settings.progress[key] || 0);
     if (result.solved > best) settings.progress[key] = result.solved;
     saveSettings();
     puzzleRush = null;
     puzzleLoadToken++; puzzleLoading = false;
     $('btnPuzzleRushStop').hidden = true;
-    $('btnPuzzleRush3').disabled = false; $('btnPuzzleRush5').disabled = false;
-    $('puzzleRushClock').textContent = '0:00';
-    $('puzzleRushScore').textContent = 'Time! You solved ' + result.solved + ' puzzles with ' + result.misses + ' mistakes. Best: ' + Math.max(best, result.solved) + '.';
+    $('btnPuzzleRush3').disabled = false; $('btnPuzzleRush5').disabled = false; $('btnPuzzleSurvival').disabled = false;
+    $('puzzleRushClock').textContent = result.mode === 'survival' ? 'END' : '0:00';
+    $('puzzleRushScore').textContent = (result.mode === 'survival' ? 'Survival ended after ' + result.misses + ' mistakes. ' : 'Time! ') + 'You solved ' + result.solved + '. Best: ' + Math.max(best, result.solved) + '.';
     puzzleSession = null;
     puzzleStatus('Puzzle Rush finished. Start another round when you are ready.', 'ok');
   }
-  function startPuzzleRush(minutes) {
-    if (minutes !== 3 && minutes !== 5) return;
+  function startPuzzleRush(mode) {
+    if (mode !== 3 && mode !== 5 && mode !== 'survival') return;
     clearInterval(puzzleRushTick); puzzleRushTick = 0;
-    puzzleRush = { minutes: minutes, endsAt: Date.now() + minutes * 60000, solved: 0, misses: 0 };
+    puzzleRush = { mode:mode === 'survival' ? 'survival' : 'timed', minutes:mode === 'survival' ? 0 : mode,
+      startedAt:Date.now(), endsAt:mode === 'survival' ? 0 : Date.now() + mode * 60000, solved:0, misses:0 };
     puzzleLoadToken++; puzzleLoading = false;
     puzzleSession = null;
-    $('btnPuzzleRush3').disabled = true; $('btnPuzzleRush5').disabled = true; $('btnPuzzleRushStop').hidden = false;
+    $('btnPuzzleRush3').disabled = true; $('btnPuzzleRush5').disabled = true; $('btnPuzzleSurvival').disabled = true; $('btnPuzzleRushStop').hidden = false;
     updatePuzzleRushDisplay();
     puzzleRushTick = setInterval(() => {
       if (!puzzleRush) return;
       updatePuzzleRushDisplay();
-      if (Date.now() >= puzzleRush.endsAt) finishPuzzleRush();
-    }, 250);
+      if (puzzleRush.mode === 'timed' && Date.now() >= puzzleRush.endsAt) finishPuzzleRush();
+    }, 1000);
     loadRushPuzzle();
   }
   function stopPuzzleRush() {
@@ -346,7 +367,7 @@ js = """
       const pz = data.puzzle;
       puzzleSession = { data: data, game: game, solution: pz.solution.slice(), index: 0,
         selected: null, hintMove: null, lastMove: pz.lastMove ? { from: pz.lastMove.slice(0,2), to: pz.lastMove.slice(2,4) } : null,
-        completed: false, originalFen: pz.fen };
+        completed: false, originalFen: pz.fen, mode:'daily' };
       $('puzzleRating').textContent = 'Rating ' + pz.rating;
       $('puzzleThemes').textContent = (pz.themes || []).map(t => t.replace(/-/g, ' ')).join(' · ') + ' · ' + Number(pz.plays || 0).toLocaleString() + ' plays';
       puzzleStatus('Find the best move for ' + (game.turn() === 'w' ? 'White' : 'Black') + '.');
@@ -370,7 +391,7 @@ js = """
   function puzzleBoardTap(event) {
     const ps = puzzleSession;
     const square = event.target && event.target.closest ? event.target.closest('.sq[data-sq]') : null;
-    if (puzzleRush && Date.now() >= puzzleRush.endsAt) { finishPuzzleRush(); return; }
+    if (puzzleRush && puzzleRush.mode === 'timed' && Date.now() >= puzzleRush.endsAt) { finishPuzzleRush(); return; }
     if (!ps || ps.completed || !square) return;
     const sq = square.getAttribute('data-sq'), piece = ps.game.get(sq), turn = ps.game.turn();
     if (!ps.selected) {
@@ -380,7 +401,11 @@ js = """
     if (piece && piece.color === turn && sq !== ps.selected) { ps.selected = sq; renderPuzzleBoard(); return; }
     const expected = ps.solution[ps.index], from = ps.selected;
     if (!expected || expected.slice(0,2) !== from || expected.slice(2,4) !== sq) {
-      if (puzzleRush) { puzzleRush.misses++; updatePuzzleRushDisplay(); }
+      if (puzzleRush) {
+        puzzleRush.misses++;
+        updatePuzzleRushDisplay();
+        if (puzzleRush.mode === 'survival' && puzzleRush.misses >= 3) { finishPuzzleRush(); return; }
+      }
       puzzleStatus('Not quite. Check the forcing moves and try again.', 'warn');
       ps.selected = null; renderPuzzleBoard(); return;
     }
@@ -405,6 +430,7 @@ js = """
           return;
         }
         settings.progress.puzzlesSolved = Number(settings.progress.puzzlesSolved || 0) + 1;
+        if (ps.mode === 'daily') recordDailyPuzzleWin(ps);
         saveSettings(); renderPuzzleProgress();
         puzzleStatus('Puzzle solved. Great work — your progress has been saved on this device.', 'ok');
       } else puzzleStatus('Correct. Find the next move.');
@@ -516,6 +542,7 @@ replace_once(
     $('btnPuzzleReset').onclick = resetDailyPuzzle;
     $('btnPuzzleRush3').onclick = () => startPuzzleRush(3);
     $('btnPuzzleRush5').onclick = () => startPuzzleRush(5);
+    $('btnPuzzleSurvival').onclick = () => startPuzzleRush('survival');
     $('btnPuzzleRushStop').onclick = stopPuzzleRush;
     $('learnPaths').addEventListener('click', e => { const b = e.target.closest('[data-lesson]'); if (b) openLearnLesson(b.getAttribute('data-lesson')); });
     $('btnWatchRefresh').onclick = () => { watchChannels = null; loadWatchChannels(); };
