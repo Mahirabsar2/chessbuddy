@@ -222,7 +222,7 @@ js = """
     { id:'mate-05', fen:'8/8/8/8/8/5KQ1/8/7k w - - 0 1', solution:['g3g2'], rating:850, themes:['mateIn1'] },
     { id:'mate-06', fen:'8/8/8/8/5K2/6Q1/8/7k w - - 0 1', solution:['g3g2'], rating:900, themes:['mateIn1'] },
     { id:'mate-07', fen:'8/8/8/8/8/2KQ4/8/k7 w - - 0 1', solution:['b3b2'], rating:850, themes:['mateIn1'] },
-    { id:'mate-08', fen:'8/8/8/8/2K5/1Q6/8/k7 w - - 0 1', solution:['b3b2'], rating:950, themes:['mateIn1'] }
+    { id:'mate-08', fen:'k7/2K5/8/1Q6/8/8/8/8 w - - 0 1', solution:['b5b7'], rating:950, themes:['mateIn1'] }
   ];
   let rushPuzzleBag = [];
   function nextRushPuzzle() {
