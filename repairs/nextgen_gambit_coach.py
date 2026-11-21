@@ -542,7 +542,7 @@ css = r'''
 .gambit-rating-row { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin:9px 0; }
 @media(max-width:380px) { .gambit-controls { grid-template-columns:1fr 1fr; } }
 '''
-css_anchor = "/* Next Gen responsive layout and touch-target pass */"
+css_anchor = "/* Offline Opening Lab */"
 replace_once(
     "app/src/main/assets/css/app.css",
     css_anchor,
