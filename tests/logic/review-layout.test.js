@@ -1,0 +1,13 @@
+const assert = require('assert');
+const fs = require('fs');
+const css = fs.readFileSync('app/src/main/assets/css/app.css', 'utf8');
+const app = fs.readFileSync('app/src/main/assets/js/app.js', 'utf8');
+assert(css.includes('.rv-summary-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr))'), 'review actions use a responsive two-column grid');
+assert(css.includes('.rv-action {\n  display:flex; align-items:center; justify-content:center; gap:8px;'), 'review buttons align icon and label');
+assert(css.includes('min-width:0; min-height:50px; height:auto;'), 'review buttons may shrink without clipping and keep a usable tap target');
+assert(css.includes('.rv-action-icon svg { display:block; width:20px; height:20px; max-width:20px; max-height:20px; }'), 'review SVG icons have fixed bounds');
+assert(css.includes('padding:14px 14px calc(18px + env(safe-area-inset-bottom, 0px))'), 'review sheet respects Android safe area');
+assert(css.includes('overflow-x: hidden;'), 'review sheet cannot create horizontal overflow');
+for (const id of ['rvStart', 'rvExplain', 'rvClose']) assert(app.includes('id="' + id + '"'), id + ' action is wired in the review summary');
+assert(app.includes("$('rvStart').onclick") && app.includes("$('rvExplain').onclick") && app.includes("$('rvClose').onclick"), 'all visible review buttons have click handlers');
+console.log('OK Game Review layout: bounded icons, responsive buttons, safe-area sheet and wired actions');
