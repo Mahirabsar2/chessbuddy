@@ -21,9 +21,8 @@ replace_once(
       return request('https://tablebase.lichess.org/standard?fen=' + encodeURIComponent(fen), 'tablebase:' + fen);
     }
     function dailyPuzzle() { return request('https://lichess.org/api/puzzle/daily', 'puzzle:daily'); }
-    function randomPuzzle() { return request('https://lichess.org/api/puzzle', 'puzzle:random:' + Date.now()); }
     function tvChannels() { return request('https://lichess.org/api/tv/channels', 'tv:channels'); }
-    return { explorer: explorer, tablebase: tablebase, dailyPuzzle: dailyPuzzle, randomPuzzle: randomPuzzle, tvChannels: tvChannels, clearCache: function () { cache.clear(); } };
+    return { explorer: explorer, tablebase: tablebase, dailyPuzzle: dailyPuzzle, tvChannels: tvChannels, clearCache: function () { cache.clear(); } };
 """,
     "Lichess API methods"
 )
@@ -42,7 +41,7 @@ replace_once(
 """,
     """    <!-- ================= PUZZLES ================= -->
     <section id="view-puzzles" class="view" aria-label="Puzzles">
-      <div class="content-hero"><span class="eyebrow">TACTICS STUDIO</span><h1>Puzzles</h1><p>Train pattern recognition with the official Lichess daily puzzle.</p></div>
+      <div class="content-hero"><span class="eyebrow">TACTICS STUDIO</span><h1>Puzzles</h1><p>Train with the daily challenge and ChessBuddy offline tactics.</p></div>
       <div class="card">
         <div class="content-head"><div><span class="eyebrow">DAILY CHALLENGE</span><h3>Today's Puzzle</h3></div><span class="chip" id="puzzleRating">Not loaded</span></div>
         <p class="muted tiny" id="puzzleThemes">Load today's position to begin. Your moves are checked against the puzzle's published solution.</p>
@@ -215,6 +214,28 @@ js = """
   const LEARN_LESSONS = __LEARN_JSON__;
   let puzzleSession = null, puzzleLoading = false, watchChannels = null, watchLoading = false;
   let puzzleRush = null, puzzleRushTick = 0, puzzleLoadToken = 0;
+  const RUSH_PUZZLE_PACK = [
+    { id:'mate-01', fen:'7k/8/5KQ1/8/8/8/8/8 w - - 0 1', solution:['g6g7'], rating:800, themes:['mateIn1'] },
+    { id:'mate-02', fen:'7k/5K2/8/6Q1/8/8/8/8 w - - 0 1', solution:['g5g7'], rating:850, themes:['mateIn1'] },
+    { id:'mate-03', fen:'7k/5K2/8/8/6Q1/8/8/8 w - - 0 1', solution:['g4g7'], rating:900, themes:['mateIn1'] },
+    { id:'mate-04', fen:'k7/8/2KQ4/8/8/8/8/8 w - - 0 1', solution:['b6b7'], rating:800, themes:['mateIn1'] },
+    { id:'mate-05', fen:'8/8/8/8/8/5KQ1/8/7k w - - 0 1', solution:['g3g2'], rating:850, themes:['mateIn1'] },
+    { id:'mate-06', fen:'8/8/8/8/5K2/6Q1/8/7k w - - 0 1', solution:['g3g2'], rating:900, themes:['mateIn1'] },
+    { id:'mate-07', fen:'8/8/8/8/8/2KQ4/8/k7 w - - 0 1', solution:['b3b2'], rating:850, themes:['mateIn1'] },
+    { id:'mate-08', fen:'8/8/8/8/2K5/1Q6/8/k7 w - - 0 1', solution:['b3b2'], rating:950, themes:['mateIn1'] }
+  ];
+  let rushPuzzleBag = [];
+  function nextRushPuzzle() {
+    if (!rushPuzzleBag.length) {
+      rushPuzzleBag = RUSH_PUZZLE_PACK.slice();
+      for (let i = rushPuzzleBag.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = rushPuzzleBag[i]; rushPuzzleBag[i] = rushPuzzleBag[j]; rushPuzzleBag[j] = tmp;
+      }
+    }
+    const p = rushPuzzleBag.pop();
+    return { id:p.id, fen:p.fen, solution:p.solution.slice(), rating:p.rating, themes:p.themes.slice(), plays:0, lastMove:null };
+  }
 
   function renderPuzzleProgress() {
     const done = Number(settings.progress.puzzlesSolved || 0);
@@ -291,9 +312,9 @@ js = """
     if (!puzzleRush || puzzleLoading) return;
     puzzleLoading = true;
     const requestToken = ++puzzleLoadToken;
-    puzzleStatus('Loading a new Puzzle Rush position…');
+    puzzleStatus('Selecting a fresh puzzle from the offline tactics pack…');
     try {
-      const data = await Lichess.randomPuzzle();
+      const data = { puzzle: nextRushPuzzle() };
       if (!puzzleRush || requestToken !== puzzleLoadToken) return;
       if (!data || !data.puzzle || !data.puzzle.fen || !Array.isArray(data.puzzle.solution) || !data.puzzle.solution.length)
         throw new Error('The random puzzle response is incomplete.');
@@ -302,7 +323,7 @@ js = """
         selected: null, hintMove: null, lastMove: pz.lastMove ? { from: pz.lastMove.slice(0,2), to: pz.lastMove.slice(2,4) } : null,
         completed: false, originalFen: pz.fen, mode: 'rush' };
       $('puzzleRating').textContent = 'Rating ' + pz.rating;
-      $('puzzleThemes').textContent = (pz.themes || []).map(t => t.replace(/-/g, ' ')).join(' · ') + ' · Random Puzzle Rush';
+      $('puzzleThemes').textContent = (pz.themes || []).map(t => t.replace(/-/g, ' ')).join(' · ') + ' · ChessBuddy Offline Pack';
       puzzleStatus('Puzzle ' + (puzzleRush.solved + 1) + ': find the best move for ' + (game.turn() === 'w' ? 'White' : 'Black') + '.');
       renderPuzzleBoard();
     } catch (e) {
