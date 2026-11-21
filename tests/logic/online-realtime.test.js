@@ -58,10 +58,16 @@ async function main() {
     filter: 'id=eq.01234567-89ab-cdef-0123-456789abcdef'
   });
   socket.emit({
+    topic: join.topic, event: 'phx_reply', ref: join.ref, join_ref: join.join_ref,
+    payload: { status:'ok', response:{ postgres_changes:[{ id:77, event:'*', schema:'public', table:'chessbuddy_games' }] } }
+  });
+  await online.restore();
+  assert(socket.sent.some(frame => frame.event === 'access_token'), 'auth refresh propagates the new access token to the live channel');
+  socket.emit({
     topic: join.topic,
     event: 'postgres_changes',
-    payload: { data: {
-      type: 'UPDATE',
+    payload: { ids:[77], data: {
+      schema:'public', table:'chessbuddy_games', type: 'UPDATE',
       record: { id: '01234567-89ab-cdef-0123-456789abcdef', current_fen: 'test-fen' },
       old_record: { current_fen: 'old-fen' }
     } }
@@ -69,8 +75,9 @@ async function main() {
   assert.strictEqual(updates.length, 1, 'forwards a database update');
   assert.strictEqual(updates[0].record.current_fen, 'test-fen');
   stop();
+  assert(socket.sent.some(frame => frame.event === 'phx_leave'), 'unsubscribe sends a channel leave frame');
   assert.strictEqual(socket.readyState, 3, 'unsubscribe closes the socket');
   assert.throws(() => online.subscribeGame('bad-id', function () {}), /Invalid online game id/);
-  console.log('OK online realtime: authenticated join, game-row filter, update callback and cleanup');
+  console.log('OK online realtime: authenticated join ack, subscription ID filter, token refresh, update callback and leave');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
