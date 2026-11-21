@@ -30,6 +30,7 @@ const chess960Block = app.match(/function chess960BackRank\(seed\) \{[\s\S]*?\n 
 assert(chess960Block, 'Chess960 start-position generator exists');
 const chess960Sandbox = {};
 vm.runInNewContext(chess960Block[0] + '\nthis.makeChess960Fen = chess960Fen;', chess960Sandbox);
+assert.strictEqual(chess960Sandbox.makeChess960Fen(518).split('/')[7].split(' ')[0], 'RNBQKBNR', 'seed 518 maps to the orthodox starting layout');
 const layouts = new Set();
 for (let seed = 0; seed < 960; seed++) {
   const fen = chess960Sandbox.makeChess960Fen(seed);
