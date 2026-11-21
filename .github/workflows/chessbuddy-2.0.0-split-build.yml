@@ -207,6 +207,9 @@ jobs:
       - name: Verify authenticated Realtime game subscriptions
         run: node tests/logic/online-realtime.test.js
 
+      - name: Verify offline Puzzle Rush mate positions
+        run: node tests/logic/puzzle-rush.test.js
+
       - name: Run Java policy tests
         run: bash tests/java/run.sh
 
