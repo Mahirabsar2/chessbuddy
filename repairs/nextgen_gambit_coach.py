@@ -283,7 +283,7 @@ gambit_controller = r'''
     $('gambitPersonalBest').textContent = 'Your best: ' + starText(stars);
     $('btnGambitPractice').disabled = run.busy;
     $('btnGambitDemo').disabled = run.busy;
-    $('btnGambitCoachMove').disabled = run.busy || run.done;
+    $('btnGambitCoachMove').disabled = run.busy || run.done || run.offBook;
   }
   function finishGambitPractice() {
     if (!gambitRun || gambitRun.done) return;
@@ -367,7 +367,7 @@ gambit_controller = r'''
   function gambitSquareTap(event) {
     const run = gambitRun;
     const el = event.target && event.target.closest ? event.target.closest('.sq[data-sq]') : null;
-    if (!run || run.mode !== 'practice' || run.done || run.busy || run.offBook || !el || run.game.turn() !== run.userSide) return;
+    if (!run || run.mode !== 'practice' || run.done || run.busy || !el || run.game.turn() !== run.userSide) return;
     const sq = el.getAttribute('data-sq'), piece = run.game.get(sq);
     if (!run.selected) {
       if (piece && piece.color === run.userSide) { run.selected = sq; renderGambitCoach(); }
@@ -381,11 +381,15 @@ gambit_controller = r'''
       return;
     }
     const uci = candidate.from + candidate.to + (candidate.promotion || '');
-    const expected = run.uci[run.index];
-    const correct = expected === uci;
     const move = run.game.move({ from:candidate.from, to:candidate.to, promotion:candidate.promotion || 'q' });
     if (!move) { setGambitNotice('That move was not legal.'); return; }
     run.selected = null; run.lastMove = { from:move.from, to:move.to };
+    if (run.offBook) {
+      if (run.game.isGameOver()) { run.done = true; setGambitNotice(run.game.isCheckmate() ? 'Checkmate — practice game finished.' : 'Practice game drawn.', 'ok'); renderGambitCoach(); return; }
+      setGambitNotice('Move accepted. Stockfish is responding from the current position.');
+      renderGambitCoach(); gambitEngineReply(); return;
+    }
+    const expected = run.uci[run.index], correct = expected === uci;
     if (correct) {
       run.index++;
       setGambitNotice('Correct repertoire move: ' + move.san + '. The coach is preparing the reply.', 'ok');
@@ -402,11 +406,18 @@ gambit_controller = r'''
   function undoGambitMove() {
     const run = gambitRun;
     if (!run || run.busy || !run.game.history().length) return;
-    run.game.undo(); run.lastMove = null; run.done = false; run.offBook = false;
-    const historyLength = run.game.history().length;
-    run.index = Math.min(run.uci.length, historyLength);
-    if (run.mode === 'practice' && run.game.turn() !== run.userSide) gambitCoachReplies();
-    else { renderGambitCoach(); setGambitNotice('Move undone. Continue the line from this position.'); }
+    if (run.offBook) {
+      run.game.undo();
+    } else if (run.mode === 'practice') {
+      do {
+        if (!run.game.history().length) break;
+        run.game.undo();
+      } while (run.game.history().length && run.game.turn() !== run.userSide);
+    } else run.game.undo();
+    run.lastMove = null; run.done = false;
+    run.index = Math.min(run.uci.length, run.game.history().length);
+    renderGambitCoach();
+    setGambitNotice(run.offBook ? 'Last free-play move undone. Stockfish will continue after your next move.' : 'Move undone. Continue the line from this position.');
   }
   function restartGambitRun() {
     if (!gambitRun) return startGambitPractice($('gambitPracticeMode').value);
