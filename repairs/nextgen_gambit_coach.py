@@ -59,6 +59,8 @@ gambit_markup = r'''      <section class="card gambit-coach-lab" id="gambitCoach
         <div class="gambit-controls">
           <button class="btn primary" id="btnGambitPractice" type="button">START PRACTICE</button>
           <button class="btn" id="btnGambitDemo" type="button">COACH DEMO</button>
+          <button class="btn" id="btnGambitAutoDemo" type="button">AUTO DEMO</button>
+          <button class="btn" id="btnGambitStopDemo" type="button" hidden>STOP DEMO</button>
           <button class="btn" id="btnGambitCoachMove" type="button">COACH MOVE</button>
           <button class="btn" id="btnGambitUndo" type="button" disabled>UNDO</button>
           <button class="btn" id="btnGambitRestart" type="button">RESTART</button>
@@ -218,6 +220,7 @@ gambit_controller = r'''
   ];
 
   let gambitRun = null, gambitCatalog = [], gambitSelected = 'alien-gambit', gambitSelectedMoves = [];
+  let gambitAutoDemoTimer = 0, gambitAutoDemoToken = 0;
   function gambitCourseList() {
     const gambits = GAMBIT_COURSES.map(c => Object.assign({ kind:'gambit' }, c));
     const book = (Openings.LINES || []).map((line, i) => ({
@@ -299,6 +302,8 @@ gambit_controller = r'''
     $('btnGambitPractice').disabled = run.busy;
     $('btnGambitDemo').disabled = run.busy;
     $('btnGambitCoachMove').disabled = run.busy || run.done || run.offBook;
+    $('btnGambitAutoDemo').disabled = run.busy;
+    $('btnGambitStopDemo').disabled = !run.busy || run.mode !== 'demo';
   }
   function finishGambitPractice() {
     if (!gambitRun || gambitRun.done) return;
@@ -358,7 +363,47 @@ gambit_controller = r'''
       if (gambitRun === run) { run.busy = false; renderGambitCoach(); }
     }
   }
+  function stopGambitAutoDemo(silent) {
+    if (gambitAutoDemoTimer) clearTimeout(gambitAutoDemoTimer);
+    gambitAutoDemoTimer = 0; gambitAutoDemoToken++;
+    const run = gambitRun;
+    if (run && run.mode === 'demo' && !run.done) run.busy = false;
+    if ($('btnGambitAutoDemo')) $('btnGambitAutoDemo').hidden = false;
+    if ($('btnGambitStopDemo')) $('btnGambitStopDemo').hidden = true;
+    if (run && run.mode === 'demo' && !run.done && !silent) {
+      setGambitNotice('Coach demonstration stopped. Continue step-by-step or start practice from this position.');
+      renderGambitCoach();
+    }
+  }
+  function startGambitAutoDemo() {
+    stopGambitAutoDemo(true);
+    $('gambitPracticeMode').value = 'demo';
+    startGambitPractice('demo');
+    const run = gambitRun, token = gambitAutoDemoToken;
+    if (!run) return;
+    $('btnGambitAutoDemo').hidden = true;
+    $('btnGambitStopDemo').hidden = false;
+    setGambitNotice('The coach is demonstrating the full repertoire line automatically…');
+    function step() {
+      if (token !== gambitAutoDemoToken || gambitRun !== run || run.done) return;
+      run.busy = true;
+      if (!gambitApplyBookMove()) {
+        run.busy = false; stopGambitAutoDemo(true); return;
+      }
+      if (run.index >= run.uci.length) {
+        run.busy = false; stopGambitAutoDemo(true); finishGambitPractice(); return;
+      }
+      renderGambitCoach();
+      gambitAutoDemoTimer = setTimeout(() => {
+        if (token !== gambitAutoDemoToken || gambitRun !== run || run.done) return;
+        run.busy = false;
+        step();
+      }, 750);
+    }
+    step();
+  }
   function startGambitPractice(mode) {
+    stopGambitAutoDemo(true);
     let line;
     try { line = gambitLineFor(gambitSelected); }
     catch (e) { setGambitNotice(e.message, 'bad'); return; }
@@ -529,6 +574,8 @@ replace_once(
     $('gambitPracticeMode').onchange = () => { if (gambitRun) startGambitPractice($('gambitPracticeMode').value); };
     $('btnGambitPractice').onclick = () => { $('gambitPracticeMode').value = 'practice'; startGambitPractice('practice'); };
     $('btnGambitDemo').onclick = () => { $('gambitPracticeMode').value = 'demo'; startGambitPractice('demo'); };
+    $('btnGambitAutoDemo').onclick = startGambitAutoDemo;
+    $('btnGambitStopDemo').onclick = () => stopGambitAutoDemo(false);
     $('btnGambitCoachMove').onclick = gambitCoachMove;
     $('btnGambitUndo').onclick = undoGambitMove;
     $('btnGambitRestart').onclick = restartGambitRun;
