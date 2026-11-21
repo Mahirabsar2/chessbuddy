@@ -214,7 +214,7 @@ js = """
   /* ================= Next Gen content tabs ================= */
   const LEARN_LESSONS = __LEARN_JSON__;
   let puzzleSession = null, puzzleLoading = false, watchChannels = null, watchLoading = false;
-  let puzzleRush = null, puzzleRushTick = 0;
+  let puzzleRush = null, puzzleRushTick = 0, puzzleLoadToken = 0;
 
   function renderPuzzleProgress() {
     const done = Number(settings.progress.puzzlesSolved || 0);
@@ -258,6 +258,7 @@ js = """
     if (result.solved > best) settings.progress[key] = result.solved;
     saveSettings();
     puzzleRush = null;
+    puzzleLoadToken++; puzzleLoading = false;
     $('btnPuzzleRushStop').hidden = true;
     $('btnPuzzleRush3').disabled = false; $('btnPuzzleRush5').disabled = false;
     $('puzzleRushClock').textContent = '0:00';
@@ -269,6 +270,7 @@ js = """
     if (minutes !== 3 && minutes !== 5) return;
     clearInterval(puzzleRushTick); puzzleRushTick = 0;
     puzzleRush = { minutes: minutes, endsAt: Date.now() + minutes * 60000, solved: 0, misses: 0 };
+    puzzleLoadToken++; puzzleLoading = false;
     puzzleSession = null;
     $('btnPuzzleRush3').disabled = true; $('btnPuzzleRush5').disabled = true; $('btnPuzzleRushStop').hidden = false;
     updatePuzzleRushDisplay();
@@ -286,10 +288,11 @@ js = """
   async function loadRushPuzzle() {
     if (!puzzleRush || puzzleLoading) return;
     puzzleLoading = true;
+    const requestToken = ++puzzleLoadToken;
     puzzleStatus('Loading a new Puzzle Rush position…');
     try {
       const data = await Lichess.randomPuzzle();
-      if (!puzzleRush) return;
+      if (!puzzleRush || requestToken !== puzzleLoadToken) return;
       if (!data || !data.puzzle || !data.puzzle.fen || !Array.isArray(data.puzzle.solution) || !data.puzzle.solution.length)
         throw new Error('The random puzzle response is incomplete.');
       const pz = data.puzzle, game = new Chess(pz.fen);
@@ -301,16 +304,19 @@ js = """
       puzzleStatus('Puzzle ' + (puzzleRush.solved + 1) + ': find the best move for ' + (game.turn() === 'w' ? 'White' : 'Black') + '.');
       renderPuzzleBoard();
     } catch (e) {
-      if (puzzleRush) puzzleStatus((e.message || 'Could not load a random puzzle.') + ' Your timer is still running.', 'warn');
-    } finally { puzzleLoading = false; }
+      if (puzzleRush && requestToken === puzzleLoadToken) puzzleStatus((e.message || 'Could not load a random puzzle.') + ' Your timer is still running.', 'warn');
+    } finally { if (requestToken === puzzleLoadToken) puzzleLoading = false; }
   }
   async function loadDailyPuzzle() {
     if (puzzleLoading) return;
+    if (puzzleRush) finishPuzzleRush();
     puzzleLoading = true;
+    const requestToken = ++puzzleLoadToken;
     $('btnDailyPuzzle').disabled = true;
     puzzleStatus('Connecting to the Lichess daily puzzle feed…');
     try {
       const data = await Lichess.dailyPuzzle();
+      if (requestToken !== puzzleLoadToken) return;
       if (!data || !data.puzzle || !data.puzzle.fen || !Array.isArray(data.puzzle.solution) || !data.puzzle.solution.length)
         throw new Error('The daily puzzle response is incomplete.');
       const game = new Chess(data.puzzle.fen);
@@ -325,9 +331,11 @@ js = """
     } catch (e) {
       puzzleStatus(e.message || 'Could not load the daily puzzle. Check your connection and retry.', 'bad');
     } finally {
-      puzzleLoading = false;
-      $('btnDailyPuzzle').disabled = false;
-      $('btnDailyPuzzle').textContent = puzzleSession ? 'Reload Daily Puzzle' : 'Try Again';
+      if (requestToken === puzzleLoadToken) {
+        puzzleLoading = false;
+        $('btnDailyPuzzle').disabled = false;
+        $('btnDailyPuzzle').textContent = puzzleSession ? 'Reload Daily Puzzle' : 'Try Again';
+      }
     }
   }
   function applyPuzzleUci(ps, uci) {
