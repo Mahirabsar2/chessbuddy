@@ -146,7 +146,7 @@ replace_once(
     activeGameOptions = options.startFen ? { variant: activeGameVariant, startFen: options.startFen } : { variant: activeGameVariant };
     variantChecks = { w: 0, b: 0 };
     game = options.startFen ? new Chess(options.startFen) : new Chess();
-    ctx = newCtx(players); if (ctx.clock) ctx.clock.start('w', performance.now());""",
+    ctx = newCtx(players); if (ctx.clock) ctx.clock.start(game.turn(), performance.now());""",
     "custom start FEN initialization"
 )
 replace_once(
@@ -164,6 +164,19 @@ replace_once(
     "  const rematch = () => startGame({ w: ctx.players.b, b: ctx.players.w });",
     "  const rematch = () => startGame({ w: ctx.players.b, b: ctx.players.w }, activeGameOptions);",
     "variant-aware rematch"
+)
+
+replace_once(
+    "app/src/main/assets/js/app.js",
+    "function saveCurrent() { lsSet(K_CUR, { pgn: game.pgn(), players: ctx.players, flipped: ctx.flipped, startedAt: ctx.startedAt, saved: ctx.saved, evalWhite: ctx.evalWhite, clock: ctx.clock ? ctx.clock.serialize() : null }); }",
+    "function saveCurrent() { lsSet(K_CUR, { pgn: game.pgn(), players: ctx.players, flipped: ctx.flipped, startedAt: ctx.startedAt, saved: ctx.saved, evalWhite: ctx.evalWhite, clock: ctx.clock ? ctx.clock.serialize() : null, variant:activeGameVariant, variantChecks:variantChecks }); }",
+    "persist variant and three-check state"
+)
+replace_once(
+    "app/src/main/assets/js/app.js",
+    "      game = g; ctx = newCtx(s.players); ctx.flipped = !!s.flipped; ctx.startedAt = s.startedAt || Date.now(); ctx.saved = !!s.saved; ctx.evalWhite = s.evalWhite || null; ctx.clock = s.clock ? Clock.restore(s.clock) : null;",
+    "      game = g; activeGameVariant = s.variant || 'standard'; activeGameOptions = activeGameVariant === 'standard' ? {variant:'standard'} : {variant:activeGameVariant, startFen:g.getHeaders().FEN || null}; variantChecks = s.variantChecks || {w:0,b:0}; ctx = newCtx(s.players); ctx.flipped = !!s.flipped; ctx.startedAt = s.startedAt || Date.now(); ctx.saved = !!s.saved; ctx.evalWhite = s.evalWhite || null; ctx.clock = s.clock ? Clock.restore(s.clock) : null;",
+    "restore variant and three-check state"
 )
 
 gambit_controller = r'''
