@@ -96,4 +96,13 @@ s = p.read_text(encoding="utf-8")
 marker = "/* Next Gen: responsive Game Review summary and predictable icon sizing */"
 if marker not in s:
     p.write_text(s + "\n" + css + "\n", encoding="utf-8")
-print("Responsive Game Review UI patch applied.")
+test = Path("tests/logic/review-layout.test.js")
+ts = test.read_text(encoding="utf-8")
+old_assert = "assert(css.includes('padding:14px 14px calc(18px + env(safe-area-inset-bottom, 0px))'), 'review sheet respects Android safe area');"
+new_assert = "assert(/padding:\\s*14px 14px calc\\(18px \\+ env\\(safe-area-inset-bottom, 0px\\)\\)/.test(css), 'review sheet respects Android safe area');"
+if old_assert in ts:
+    test.write_text(ts.replace(old_assert, new_assert, 1), encoding="utf-8")
+elif new_assert not in ts:
+    raise SystemExit("Game Review safe-area assertion could not be found.")
+
+print("Responsive Game Review UI patch applied and safe-area test normalized.")
