@@ -8,7 +8,7 @@ const html = fs.readFileSync('app/src/main/assets/index.html', 'utf8');
 const match = app.match(/const GAMBIT_COURSES = \[([\s\S]*?)\n  \];/);
 assert(match, 'dedicated gambit catalogue exists');
 const gambits = vm.runInNewContext('[' + match[1] + ']');
-assert(gambits.length >= 30, 'at least thirty curated gambit courses are included');
+assert(gambits.length >= 49, 'at least 49 gambit and mating-pattern courses are included');
 assert.strictEqual(new Set(gambits.map(c => c.id)).size, gambits.length, 'gambit IDs are unique');
 assert(gambits.some(c => c.id === 'alien-gambit'), 'Alien Gambit has a dedicated course');
 
@@ -65,11 +65,18 @@ for (const course of gambits) {
     assert(move, course.id + ': illegal SAN at ply ' + (i + 1) + ' (' + moves[i] + ')');
     totalPlies++;
   }
+  if (course.kind === 'pattern') assert(game.isCheckmate(), course.id + ': mating pattern must finish in checkmate');
 }
 const alien = gambits.find(c => c.id === 'alien-gambit');
 assert(alien.moves.startsWith('e4 c6 d4 d5 Nd2 dxe4 Nxe4 Nf6 Ng5 h6 Nxf7'), 'Alien Gambit follows the documented Caro-Kann move order');
+const foolsMate = gambits.find(c => c.id === 'fools-mate');
+const scholarsMate = gambits.find(c => c.id === 'scholars-mate');
+assert(foolsMate && foolsMate.kind === 'pattern', 'Fool’s Mate is catalogued as a mating pattern, not a gambit');
+assert(scholarsMate && scholarsMate.kind === 'pattern', 'Scholar’s Mate is catalogued as a mating pattern');
+assert(html.includes('id="gambitCategoryFilter"'), 'repertoire can be filtered into openings, gambits and mating patterns');
+assert(app.includes('starTotals'), 'overall repertoire star totals are displayed');
 assert(html.includes('id="gambitCoachLab"'), 'Gambit Coach panel is mounted');
-for (const id of ['gambitSearch','gambitCourseSelect','gambitPracticeSide','gambitPracticeMode','gambitCoachBoard',
+for (const id of ['gambitSearch','gambitCategoryFilter','gambitCourseSelect','gambitPracticeSide','gambitPracticeMode','gambitCoachBoard',
   'btnGambitPractice','btnGambitDemo','btnGambitAutoDemo','btnGambitStopDemo','btnGambitCoachMove','btnGambitUndo','btnGambitRestart']) {
   assert(html.includes('id="' + id + '"'), 'Gambit Coach control exists: ' + id);
 }
@@ -84,4 +91,4 @@ assert(app.includes('function chess960Fen(seed)'), 'Chess960 back-rank generatio
 assert(app.includes("activeGameVariant === 'threecheck'"), '3-Check win condition is enforced');
 assert(app.includes("activeGameVariant === 'koth'"), 'King of the Hill win condition is enforced');
 assert(app.includes("options.startFen ? new Chess(options.startFen) : new Chess()"), 'custom FEN positions start a game');
-console.log('OK Repertoire: ' + openingBook.length + ' openings + ' + gambits.length + ' gambits, ' + totalPlies + ' legal gambit plies, 960 Chess960 layouts and coach/variant controls');
+console.log('OK Repertoire: ' + openingBook.length + ' opening lines + ' + gambits.length + ' gambit/mating-pattern courses, ' + totalPlies + ' legal plies, 960 Chess960 layouts and coach/variant controls');
