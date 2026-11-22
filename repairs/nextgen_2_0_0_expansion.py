@@ -180,7 +180,7 @@ controller = r'''
         '<small>' + value + ' / ' + a.target + ' · ' + a.xp + ' XP' + (done ? ' · UNLOCKED' : '') + '</small></div></article>';
     }).join('');
     $('profileAchievementSummary').textContent = unlocked.length + ' / ' + CB2_ACHIEVEMENTS.length + ' unlocked · ' + xp + ' XP';
-    if (typeof icon === 'function') $('achievementGrid').querySelectorAll('[data-ic]').forEach(el => { el.innerHTML = ic(el.getAttribute('data-ic')); });
+    if (typeof ic === 'function') $('achievementGrid').querySelectorAll('[data-ic]').forEach(el => { el.innerHTML = ic(el.getAttribute('data-ic')); });
   }
 
   /* ================= ChessBuddy 2.0.0: Solo Bot Cups ================= */
