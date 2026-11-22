@@ -110,7 +110,7 @@ replace_once(
     '      <div class="more-section-title"><h2>App</h2></div>',
     '''      <div class="more-section-title"><h2>Competitive &amp; Library</h2></div>
       <div class="more-action-grid">
-        <button class="more-action" id="moreTournaments" type="button"><span class="more-action-icon" data-ic="trophy"></span><b>Events &amp; Cups</b><small>Solo bot cups and round results</small></button>
+        <button class="more-action" id="moreTournaments" type="button"><span class="more-action-icon" data-ic="crown"></span><b>Events &amp; Cups</b><small>Solo bot cups and round results</small></button>
         <button class="more-action" id="moreAchievements" type="button"><span class="more-action-icon" data-ic="crown"></span><b>Achievements</b><small>XP, milestones and progress</small></button>
         <button class="more-action" id="moreCollections" type="button"><span class="more-action-icon" data-ic="book"></span><b>Game Collections</b><small>Save, organize and export PGNs</small></button>
       </div>
@@ -134,16 +134,16 @@ controller = r'''
     { id:'first-win', title:'Opening Victory', detail:'Win your first completed bot game.', xp:35, metric:'wins', target:1, icon:'crown' },
     { id:'ten-games', title:'Getting Comfortable', detail:'Finish 10 bot games.', xp:50, metric:'games', target:10, icon:'chart' },
     { id:'fifty-games', title:'Regular at the Board', detail:'Finish 50 bot games.', xp:100, metric:'games', target:50, icon:'board' },
-    { id:'hundred-games', title:'Century of Chess', detail:'Finish 100 bot games.', xp:200, metric:'games', target:100, icon:'trophy' },
+    { id:'hundred-games', title:'Century of Chess', detail:'Finish 100 bot games.', xp:200, metric:'games', target:100, icon:'crown' },
     { id:'puzzle-five', title:'Tactical Spark', detail:'Solve 5 puzzles.', xp:30, metric:'puzzles', target:5, icon:'tPuzzle' },
     { id:'puzzle-twenty-five', title:'Pattern Hunter', detail:'Solve 25 puzzles.', xp:80, metric:'puzzles', target:25, icon:'tPuzzle' },
     { id:'rush-ten', title:'Rush Hour', detail:'Solve 10 puzzles in a single Puzzle Rush run.', xp:100, metric:'rush', target:10, icon:'spark' },
-    { id:'daily-three', title:'Consistency', detail:'Build a 3-day daily puzzle streak.', xp:75, metric:'streak', target:3, icon:'calendar' },
+    { id:'daily-three', title:'Consistency', detail:'Build a 3-day daily puzzle streak.', xp:75, metric:'streak', target:3, icon:'tHist' },
     { id:'lesson-five', title:'Student of the Game', detail:'Complete 5 lessons.', xp:60, metric:'lessons', target:5, icon:'book' },
     { id:'opening-five', title:'Opening Explorer', detail:'Complete 5 Opening Lab courses.', xp:75, metric:'openings', target:5, icon:'book' },
     { id:'gambit-five', title:'Gambit Specialist', detail:'Complete 5 opening or gambit coach lines.', xp:90, metric:'gambits', target:5, icon:'spark' },
-    { id:'cup-finish', title:'Cup Finisher', detail:'Complete a full Solo Bot Cup.', xp:100, metric:'cups', target:1, icon:'trophy' },
-    { id:'cup-podium', title:'Podium Finish', detail:'Score at least 3 points in a completed 5- or 7-round cup.', xp:150, metric:'podiums', target:1, icon:'medal' }
+    { id:'cup-finish', title:'Cup Finisher', detail:'Complete a full Solo Bot Cup.', xp:100, metric:'cups', target:1, icon:'crown' },
+    { id:'cup-podium', title:'Podium Finish', detail:'Score at least 3 points in a completed 5- or 7-round cup.', xp:150, metric:'podiums', target:1, icon:'crown' }
   ];
 
   function cb2AchievementStats() {
