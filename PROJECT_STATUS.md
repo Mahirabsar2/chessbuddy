@@ -64,6 +64,7 @@
 8. Do not call this a production release until the combined exact APK/source-ZIP artifact, metadata, checksums, persistent signing and device tests are verified.
 
 ## Daily records
+- [2026-11-22](PROJECT_LOG_2026-11-22.md)
 - [2026-11-21](PROJECT_LOG_2026-11-21.md)
 - [2026-11-20](PROJECT_LOG_2026-11-20.md)
 - [2026-11-19](PROJECT_LOG_2026-11-19.md)
