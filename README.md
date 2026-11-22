@@ -1,9 +1,18 @@
-# ChessBuddy
+# ChessBuddy Next Gen 2.0.0
 
 A modern Android chess app with a chess.com-style interface, a **real Stockfish** engine, and AI models
 (Claude and any OpenAI-compatible service) that can coach you or play against you.
 
 **Status: source ready, APK is built by GitHub Actions.** See `PROJECT_STATUS.md` for exactly what is verified.
+
+## Next Gen 2.0.0 additions
+- Player profile and stats destinations with clearly labelled local practice ratings.
+- Searchable opening and gambit coach, plus Chess960 start layouts, custom FEN, 3-Check and King of the Hill.
+- Daily puzzle, offline Puzzle Rush/Survival, lessons, Opening Lab, game review and endgame tablebase tools.
+- Local achievement XP, solo bot cups and PGN collections.
+- Dedicated release and feature coverage tracker: [2.0.0 feature audit](docs/NEXTGEN_2.0.0_FEATURE_AUDIT.md).
+
+**Honest feature boundaries:** solo cups, collections, achievements and practice ratings are local-only. The app is not a 1-to-1 Chess.com clone; live ranked matchmaking, real online tournaments/clubs, social feed/chat, cloud collections and the complete Chess.com puzzle library are not included. See the [release checklist](NEXTGEN_RELEASE_CHECKLIST.md) before treating a preview APK as release-ready.
 
 ## Features
 - **Play**: lobby, Stockfish bots (Elo 400 – full strength) grouped Beginner / Intermediate / Advanced / Master, a custom-Elo slider, AI-model opponents, AI vs AI (bot or model on each side), pass-and-play.
