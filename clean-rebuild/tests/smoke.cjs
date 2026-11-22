@@ -20,6 +20,8 @@ for (const rule of ['game.moves(', 'game.move(', 'isCheckmate()', 'isStalemate()
   assert.ok(js.includes(rule), 'missing chess rule call: ' + rule);
 }
 assert.ok(html.includes('js/chess-bundle.js'), 'chess rules bundle is not loaded');
+assert.ok(html.includes('data-view="settings"'), 'settings route must be reachable');
+assert.ok(html.includes('data-view="analysis"'), 'analysis route must be reachable from game UI');
 assert.ok(manifest.includes('android:name=".MainActivity"'));
 assert.ok(gradle.includes("applicationId 'com.chessbuddy'"));
 assert.ok(gradle.includes("versionName '0.1.0'"));
