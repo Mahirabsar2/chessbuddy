@@ -31,6 +31,7 @@
   let pendingPromotion = null;
   let puzzleSolved = false;
   let lessonIndex = 0;
+  let playRecorded = false;
   let toastTimer = null;
   const lessonMoves = [
     { from: 'e2', to: 'e4', title: 'Claim the center', copy: '1. e4 controls central squares and opens lines for your pieces.' },
@@ -132,6 +133,7 @@
   function newGame(minutes) {
     if (typeof minutes === 'number') selectedTime = minutes;
     games.play = new Chess();
+    playRecorded = false;
     selected.play = null;
     flipped.play = false;
     clocks = { w: selectedTime * 60, b: selectedTime * 60 };
@@ -148,12 +150,12 @@
     stopClock();
     const status = document.getElementById('game-status');
     if (status) status.textContent = message;
-    if (result && !games.play.isGameOver()) return;
-    if (result) {
+    if (result && !playRecorded) {
       const stats = safeReadStats();
       stats.games += 1;
       if (result === 'win') stats.wins += 1;
       if (result === 'draw') stats.draws += 1;
+      playRecorded = true;
       saveStats(stats);
     }
     renderAll();
@@ -314,6 +316,12 @@
     if ((context === 'play' && game.isGameOver()) || (context === 'puzzle' && puzzleSolved)) return;
     const chosen = selected[context];
     const piece = game.get(square);
+    if (context === 'play' && !game.history().length && selectedTime > 0 && !clockSide && piece && piece.color === game.turn()) {
+      clockSide = game.turn();
+      lastClockTick = Date.now();
+      if (!clockTimer) clockTimer = setInterval(tickClock, 250);
+      updateClockDisplay();
+    }
     if (chosen) {
       const candidate = game.moves({ square: chosen, verbose: true }).filter(function (move) { return move.to === square; });
       if (candidate.length) {
@@ -354,8 +362,7 @@
     selected[context] = null;
 
     if (context === 'play') {
-      if (games.play.history().length === 1) startNextClock();
-      else if (!games.play.isGameOver()) startNextClock();
+      if (!games.play.isGameOver()) startNextClock();
       if (games.play.isGameOver()) {
         const result = games.play.isDraw() ? 'draw' : 'win';
         finishGame(getStatus(games.play), result);
@@ -372,8 +379,10 @@
         stats.puzzles += 1;
         saveStats(stats);
       } else {
+        games.puzzle.undo();
+        selected.puzzle = null;
         const feedback = document.getElementById('puzzle-feedback');
-        if (feedback) feedback.textContent = 'Not the solution. Reset and look for a forcing check.';
+        if (feedback) feedback.textContent = 'Not the solution. Look for a forcing check and try again.';
       }
     } else if (context === 'learn') {
       lessonIndex += 1;
@@ -475,9 +484,7 @@
       if (!games.play.history().length) return showToast('There is no game to resign.');
       stopClock();
       const winner = games.play.turn() === 'w' ? 'Black' : 'White';
-      const stats = safeReadStats(); stats.games += 1; stats.wins += 1; saveStats(stats);
-      document.getElementById('game-status').textContent = winner + ' wins by resignation.';
-      return renderAll();
+      return finishGame(winner + ' wins by resignation.', 'win');
     }
     if (action === 'reset-puzzle') return resetPuzzle();
     if (action === 'flip-puzzle') { flipped.puzzle = !flipped.puzzle; return renderBoard('puzzle'); }
