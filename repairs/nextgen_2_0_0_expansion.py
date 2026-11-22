@@ -13,6 +13,25 @@ def replace_once(path, old, new, label):
     target.write_text(source.replace(old, new, 1), encoding="utf-8")
 
 
+replace_once(
+    "app/build.gradle",
+    "versionName '1.0.0'",
+    "versionName '2.0.0'",
+    "Android package versionName 2.0.0"
+)
+replace_once(
+    "tests/logic/rebuild-smoke.test.js",
+    r"versionName '1\\.0\\.0'",
+    r"versionName '2\\.0\\.0'",
+    "2.0.0 Android version smoke-test assertion"
+)
+replace_once(
+    "tests/logic/rebuild-smoke.test.js",
+    "Android versionName must be 1.0.0",
+    "Android versionName must be 2.0.0",
+    "2.0.0 Android version smoke-test message"
+)
+
 # Dedicated destinations are routed through the existing five-tab navigation.
 new_views = r'''    <section id="view-achievements" class="view" aria-label="Achievements">
       <div class="content-hero achievement-hero">
