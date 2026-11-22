@@ -389,8 +389,8 @@ replace_once(
 )
 replace_once(
     "app/src/main/assets/js/app.js",
-    "['profile','stats','settings','history','coach'].indexOf(currentTab) >= 0",
-    "['profile','stats','settings','history','coach','achievements','tournaments','collections'].indexOf(currentTab) >= 0",
+    "  window.cbBack = function () {\\n    if (!$(\'modal\').hidden) { closeModal(); return true; }\\n    if (!$(\'boardOverlay\').hidden && playScreen === \'game\' && currentTab === \'play\') { hideOverlay(); return true; }\\n    if ([\'profile\',\'stats\',\'settings\',\'history\',\'coach\'].indexOf(currentTab) >= 0) { showTab(\'more\'); return true; }",
+    "  window.cbBack = function () {\\n    if (!$(\'modal\').hidden) { closeModal(); return true; }\\n    if (!$(\'boardOverlay\').hidden && playScreen === \'game\' && currentTab === \'play\') { hideOverlay(); return true; }\\n    if ([\'profile\',\'stats\',\'settings\',\'history\',\'coach\',\'achievements\',\'tournaments\',\'collections\'].indexOf(currentTab) >= 0) { showTab(\'more\'); return true; }",
     "2.0.0 back navigation"
 )
 
