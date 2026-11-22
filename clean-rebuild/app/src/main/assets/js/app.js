@@ -237,13 +237,13 @@
         pieceNode.className = 'piece';
         pieceNode.textContent = glyph;
         button.appendChild(pieceNode);
-        if (col === 0) {
+        if (col === 0 && localStorage.getItem('cb.coords') !== 'false') {
           const coord = document.createElement('span');
           coord.className = 'coord';
           coord.textContent = String(rank);
           button.appendChild(coord);
         }
-        if (row === 7) {
+        if (row === 7 && localStorage.getItem('cb.coords') !== 'false') {
           const coord = document.createElement('span');
           coord.className = 'coord file-coord';
           coord.textContent = files[file];
