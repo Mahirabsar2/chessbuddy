@@ -1,10 +1,11 @@
-name: ChessBuddy Next Gen 1.0.0 Android build
+name: ChessBuddy Next Gen 2.0.0 Android build
 
 on:
   workflow_dispatch:
   push:
     branches:
       - next-gen-1.0.0
+      - chessbuddy-nextgen-2.0.0
     paths:
       - 'ChessBuddy-2.0.0-Part1-Stockfish.zip'
       - 'ChessBuddy-2.0.0-Part2-Stockfish.zip'
@@ -31,7 +32,7 @@ jobs:
       - name: Check out Next Gen source branch
         uses: actions/checkout@v4
         with:
-          ref: next-gen-1.0.0
+          ref: ${{ github.ref_name }}
 
       - name: Verify all five source ZIPs
         shell: bash
@@ -66,6 +67,7 @@ jobs:
           python3 repairs/nextgen_media_assets.py
           python3 repairs/nextgen_realtime.py
           python3 repairs/nextgen_mobile_experience.py
+          python3 repairs/nextgen_2_0_0_expansion.py
           node --check app/src/main/assets/js/app.js
           node --check app/src/main/assets/js/lichess.js
           node --check app/src/main/assets/js/online.js
@@ -185,12 +187,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tar --exclude='./.git' --exclude='./.gradle' --exclude='./app/build' -czf "$RUNNER_TEMP/chessbuddy-nextgen-1.0.0-source.tar.gz" .
+          tar --exclude='./.git' --exclude='./.gradle' --exclude='./app/build' -czf "$RUNNER_TEMP/chessbuddy-nextgen-2.0.0-source.tar.gz" .
 
       - name: Upload extracted source snapshot
         uses: actions/upload-artifact@v4
         with:
-          name: ChessBuddy-NextGen-1.0.0-extracted-source
+          name: ChessBuddy-NextGen-2.0.0-extracted-source
           path: ${{ runner.temp }}/chessbuddy-nextgen-1.0.0-source.tar.gz
           if-no-files-found: error
 
@@ -222,6 +224,9 @@ jobs:
 
       - name: Verify mobile Profile, Stats, Settings and responsive UI
         run: node tests/logic/mobile-experience.test.js
+
+      - name: Verify ChessBuddy 2.0.0 achievements, bot cups and PGN collections
+        run: node tests/logic/nextgen-2.0.0-expansion.test.js
 
       - name: Run Java policy tests
         run: bash tests/java/run.sh
@@ -283,7 +288,7 @@ jobs:
           echo "apk_bytes=$APK_BYTES" >> "$GITHUB_OUTPUT"
           echo "signing_mode=$CB_SIGNING_MODE" >> "$GITHUB_OUTPUT"
           if [ "$CB_SIGNING_MODE" = "persistent" ]; then echo "release_ready=true" >> "$GITHUB_OUTPUT"; else echo "release_ready=false" >> "$GITHUB_OUTPUT"; fi
-          cp "$APK" "$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk"
+          cp "$APK" "$RUNNER_TEMP/ChessBuddy-NextGen-2.0.0.apk"
           if [ "$CB_SIGNING_MODE" != "persistent" ]; then
             echo "::warning::Preview signing only. Add the stable release keystore secrets before publishing auto-update releases."
           fi
@@ -291,7 +296,7 @@ jobs:
       - name: Upload Next Gen APK candidate (not a public release)
         uses: actions/upload-artifact@v4
         with:
-          name: ChessBuddy-NextGen-1.0.0-preview-apk
+          name: ChessBuddy-NextGen-2.0.0-preview-apk
           path: ${{ runner.temp }}/ChessBuddy-NextGen-1.0.0.apk
           if-no-files-found: error
 
@@ -305,13 +310,13 @@ jobs:
           set -euo pipefail
           APK="$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk"
           SHA="$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk.sha256"
-          sha256sum "$APK" | awk '{print $1 "  ChessBuddy-NextGen-1.0.0-preview.apk"}' > "$SHA"
+          sha256sum "$APK" | awk '{print $1 "  ChessBuddy-NextGen-2.0.0-preview.apk"}' > "$SHA"
           cp "$APK" "$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0-preview.apk"
-          TAG="nextgen-1.0.0-preview-build$GITHUB_RUN_NUMBER"
+          TAG="nextgen-2.0.0-preview-build$GITHUB_RUN_NUMBER"
           gh release create "$TAG" "$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0-preview.apk" "$SHA" \
             --target "$GITHUB_SHA" \
             --prerelease \
-            --title "ChessBuddy Next Gen 1.0.0 Preview (build $GITHUB_RUN_NUMBER)" \
+            --title "ChessBuddy Next Gen 2.0.0 Preview (build $GITHUB_RUN_NUMBER)" \
             --notes "Preview build for testing. This APK uses a temporary preview signing key, so later builds cannot update it in place. Install as a fresh app. This is not a stable auto-update release."
 
       - name: Publish verified stable release for in-app updates
@@ -324,7 +329,7 @@ jobs:
           APK="$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk"
           SHA="$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk.sha256"
           sha256sum "$APK" | awk '{print $1 "  ChessBuddy-NextGen-1.0.0.apk"}' > "$SHA"
-          TAG="nextgen-1.0.0-build$GITHUB_RUN_NUMBER"
+          TAG="nextgen-2.0.0-build$GITHUB_RUN_NUMBER"
           gh release create "$TAG" "$APK" "$SHA" \
             --target "$GITHUB_SHA" \
             --title "ChessBuddy Next Gen 1.0.0 (build $GITHUB_RUN_NUMBER)" \
