@@ -21,8 +21,8 @@ replace_once(
 )
 replace_once(
     "tests/logic/rebuild-smoke.test.js",
-    r"versionName '1\\.0\\.0'",
-    r"versionName '2\\.0\\.0'",
+    r"versionName '1\.0\.0'",
+    r"versionName '2\.0\.0'",
     "2.0.0 Android version smoke-test assertion"
 )
 replace_once(
