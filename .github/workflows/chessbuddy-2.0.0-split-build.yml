@@ -78,7 +78,7 @@ jobs:
           grep -q 'view-learn' app/src/main/assets/index.html
           grep -q 'view-watch' app/src/main/assets/index.html
           grep -q 'view-more' app/src/main/assets/index.html
-          grep -q "versionName '1.0.0'" app/build.gradle
+          grep -q "versionName '2.0.0'" app/build.gradle
 
       - name: Install Android NDK and Rust toolchain
         uses: android-actions/setup-android@v3
@@ -193,7 +193,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ChessBuddy-NextGen-2.0.0-extracted-source
-          path: ${{ runner.temp }}/chessbuddy-nextgen-1.0.0-source.tar.gz
+          path: ${{ runner.temp }}/chessbuddy-nextgen-2.0.0-source.tar.gz
           if-no-files-found: error
 
       - name: Set up Node.js
@@ -297,7 +297,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ChessBuddy-NextGen-2.0.0-preview-apk
-          path: ${{ runner.temp }}/ChessBuddy-NextGen-1.0.0.apk
+          path: ${{ runner.temp }}/ChessBuddy-NextGen-2.0.0.apk
           if-no-files-found: error
 
 
@@ -308,12 +308,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APK="$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk"
-          SHA="$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk.sha256"
+          APK="$RUNNER_TEMP/ChessBuddy-NextGen-2.0.0.apk"
+          SHA="$RUNNER_TEMP/ChessBuddy-NextGen-2.0.0.apk.sha256"
           sha256sum "$APK" | awk '{print $1 "  ChessBuddy-NextGen-2.0.0-preview.apk"}' > "$SHA"
-          cp "$APK" "$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0-preview.apk"
+          cp "$APK" "$RUNNER_TEMP/ChessBuddy-NextGen-2.0.0-preview.apk"
           TAG="nextgen-2.0.0-preview-build$GITHUB_RUN_NUMBER"
-          gh release create "$TAG" "$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0-preview.apk" "$SHA" \
+          gh release create "$TAG" "$RUNNER_TEMP/ChessBuddy-NextGen-2.0.0-preview.apk" "$SHA" \
             --target "$GITHUB_SHA" \
             --prerelease \
             --title "ChessBuddy Next Gen 2.0.0 Preview (build $GITHUB_RUN_NUMBER)" \
@@ -326,11 +326,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APK="$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk"
-          SHA="$RUNNER_TEMP/ChessBuddy-NextGen-1.0.0.apk.sha256"
-          sha256sum "$APK" | awk '{print $1 "  ChessBuddy-NextGen-1.0.0.apk"}' > "$SHA"
+          APK="$RUNNER_TEMP/ChessBuddy-NextGen-2.0.0.apk"
+          SHA="$RUNNER_TEMP/ChessBuddy-NextGen-2.0.0.apk.sha256"
+          sha256sum "$APK" | awk '{print $1 "  ChessBuddy-NextGen-2.0.0.apk"}' > "$SHA"
           TAG="nextgen-2.0.0-build$GITHUB_RUN_NUMBER"
           gh release create "$TAG" "$APK" "$SHA" \
             --target "$GITHUB_SHA" \
-            --title "ChessBuddy Next Gen 1.0.0 (build $GITHUB_RUN_NUMBER)" \
-            --notes "Verified ChessBuddy Next Gen 1.0.0 release. SHA-256 checksum is included. Android will request approval before installation."
+            --title "ChessBuddy Next Gen 2.0.0 (build $GITHUB_RUN_NUMBER)" \
+            --notes "Verified ChessBuddy Next Gen 2.0.0 release. SHA-256 checksum is included. Android will request approval before installation."
