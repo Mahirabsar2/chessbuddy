@@ -1,0 +1,89 @@
+name: ChessBuddy clean rebuild Android
+
+on:
+  push:
+    branches: [chessbuddy-zero-rebuild]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: chessbuddy-zero-rebuild-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout clean rebuild
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: clean-rebuild/package-lock.json
+
+      - name: Bundle chess rules engine
+        working-directory: clean-rebuild
+        run: |
+          npm install --no-audit --no-fund
+          npm run build:chess
+          npm test
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build signed preview APK
+        working-directory: clean-rebuild
+        run: gradle --no-daemon --stacktrace assembleRelease
+
+      - name: Verify APK
+        working-directory: clean-rebuild
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          mkdir -p "$RUNNER_TEMP/chessbuddy"
+          cp "$APK" "$RUNNER_TEMP/chessbuddy/ChessBuddy-clean-rebuild-preview.apk"
+          sha256sum "$RUNNER_TEMP/chessbuddy/ChessBuddy-clean-rebuild-preview.apk" > "$RUNNER_TEMP/chessbuddy/SHA256SUMS.txt"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChessBuddy-clean-rebuild-preview
+          path: ${{ runner.temp }}/chessbuddy/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish preview release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="clean-rebuild-preview-build${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" \
+            "$RUNNER_TEMP/chessbuddy/ChessBuddy-clean-rebuild-preview.apk" \
+            "$RUNNER_TEMP/chessbuddy/SHA256SUMS.txt" \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "ChessBuddy clean rebuild preview (build ${GITHUB_RUN_NUMBER})" \
+            --notes "First clean-room Android rebuild preview. Test build; install as a fresh app. Not a stable auto-update release."

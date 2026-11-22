@@ -1,0 +1,14 @@
+{
+  "name": "chessbuddy-clean-rebuild",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Clean-room ChessBuddy Android app assets and chess rules bundle",
+  "scripts": {
+    "build:chess": "esbuild app/src/main/assets/js/chess-entry.js --bundle --format=iife --global-name=ChessBundle --outfile=app/src/main/assets/js/chess-bundle.js",
+    "test": "node tests/smoke.cjs"
+  },
+  "devDependencies": {
+    "chess.js": "1.4.0",
+    "esbuild": "0.24.2"
+  }
+}

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#14181c">
+  <title>ChessBuddy</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <button class="brand" data-view="home" aria-label="ChessBuddy home"><span class="brand-mark">♞</span><span>ChessBuddy</span></button>
+    <nav class="topnav" aria-label="Main navigation">
+      <button data-view="play">Play</button>
+      <button data-view="puzzles">Puzzles</button>
+      <button data-view="learn">Learn</button>
+      <button data-view="analysis">Analysis</button>
+    </nav>
+    <button class="profile-chip" data-view="profile"><span class="avatar">C</span><span>Profile</span></button>
+  </header>
+
+  <main class="page-wrap">
+    <section id="view-home" class="view active">
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">YOUR CHESS SPACE</p>
+          <h1>Make your next move count.</h1>
+          <p class="muted hero-lede">Play, learn and review at your own pace. Your board is ready.</p>
+          <button class="button primary large" data-action="start-game">Play a game <span>→</span></button>
+        </div>
+        <div class="hero-board-art" aria-hidden="true">
+          <div class="mini-board"><span>♜</span><span>♞</span><span>♝</span><span>♛</span><span>♚</span><span>♝</span><span>♞</span><span>♜</span></div>
+          <div class="hero-piece">♘</div>
+        </div>
+      </div>
+
+      <div class="section-heading"><div><p class="eyebrow">JUMP BACK IN</p><h2>Choose your next challenge</h2></div></div>
+      <div class="feature-grid">
+        <button class="feature-card play-card" data-action="start-game"><span class="feature-icon">♟</span><strong>Play</strong><span>Start a local game or pass the phone.</span><b>Start playing →</b></button>
+        <button class="feature-card puzzle-card" data-action="open-puzzle"><span class="feature-icon">✦</span><strong>Daily puzzle</strong><span>Find the cleanest move in a tactical position.</span><b>Solve puzzle →</b></button>
+        <button class="feature-card learn-card" data-action="open-lesson"><span class="feature-icon">▤</span><strong>Learn</strong><span>Build a solid opening with a guided line.</span><b>Start lesson →</b></button>
+      </div>
+
+      <div class="section-heading"><div><p class="eyebrow">YOUR PROGRESS</p><h2>Local stats</h2></div><button class="text-button" data-view="profile">View profile →</button></div>
+      <div class="stat-grid">
+        <div class="stat-card"><span>Games played</span><strong id="home-games">0</strong></div>
+        <div class="stat-card"><span>Wins</span><strong id="home-wins">0</strong></div>
+        <div class="stat-card"><span>Puzzles solved</span><strong id="home-puzzles">0</strong></div>
+      </div>
+    </section>
+
+    <section id="view-play" class="view">
+      <div class="view-heading"><div><p class="eyebrow">PLAY</p><h1>Local game</h1><p class="muted">Pass & Play on one device. Every move is checked by the chess rules engine.</p></div><span class="pill live-pill">● READY</span></div>
+      <div class="game-layout">
+        <div class="board-column">
+          <div class="player-row"><span class="avatar dark-avatar">B</span><div class="player-name"><strong>Black</strong><small id="black-subtitle">Local player</small></div><strong class="clock" id="black-clock">10:00</strong></div>
+          <div id="board" class="chessboard" data-context="play" aria-label="Chess board"></div>
+          <div class="player-row"><span class="avatar light-avatar">W</span><div class="player-name"><strong>White</strong><small id="white-subtitle">Local player</small></div><strong class="clock active-clock" id="white-clock">10:00</strong></div>
+          <div class="board-toolbar">
+            <button class="icon-button" data-action="undo" title="Undo">↶ <span>Undo</span></button>
+            <button class="icon-button" data-action="flip" title="Flip board">⇅ <span>Flip</span></button>
+            <button class="icon-button" data-action="copy-fen" title="Copy FEN">▣ <span>Copy FEN</span></button>
+            <button class="icon-button" data-action="share-pgn" title="Share PGN">↗ <span>Share PGN</span></button>
+          </div>
+        </div>
+        <aside class="game-panel">
+          <div class="panel-head"><div><p class="eyebrow">GAME SETTINGS</p><h2>Time control</h2></div></div>
+          <div class="time-grid">
+            <button data-time="1" class="time-option">1 min</button>
+            <button data-time="3" class="time-option">3 min</button>
+            <button data-time="5" class="time-option">5 min</button>
+            <button data-time="10" class="time-option selected">10 min</button>
+            <button data-time="15" class="time-option">15 min</button>
+            <button data-time="0" class="time-option">No clock</button>
+          </div>
+          <button class="button primary full" data-action="new-game">New game</button>
+          <div class="game-status" id="game-status" role="status">White to move</div>
+          <div class="moves-head"><strong>Moves</strong><span id="move-count">0 moves</span></div>
+          <div id="move-list" class="move-list"><span class="empty-state">Moves will appear here.</span></div>
+          <div class="game-actions"><button class="button subtle" data-action="offer-draw">Offer draw</button><button class="button subtle danger-text" data-action="resign">Resign</button></div>
+          <p class="tiny-note">Offline local game. Online matchmaking and computer opponents are not connected in this first build.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="view-puzzles" class="view">
+      <div class="view-heading"><div><p class="eyebrow">TACTICS</p><h1>Daily puzzle</h1><p class="muted">White to move. Find the checkmate in one.</p></div><span class="pill">MATE IN 1</span></div>
+      <div class="puzzle-layout">
+        <div class="board-column"><div id="puzzle-board" class="chessboard" data-context="puzzle"></div><div class="board-toolbar"><button class="icon-button" data-action="reset-puzzle">↺ <span>Reset</span></button><button class="icon-button" data-action="flip-puzzle">⇅ <span>Flip</span></button></div></div>
+        <div class="game-panel puzzle-info"><p class="eyebrow">THE CHALLENGE</p><h2>Finish the attack</h2><p>White's king and queen are coordinating against the black king. Find the forcing move.</p><div id="puzzle-feedback" class="game-status">Your move, White.</div><button class="button primary full" data-action="reset-puzzle">Try again</button><div class="tiny-note">Puzzle progress is stored on this device.</div></div>
+      </div>
+    </section>
+
+    <section id="view-learn" class="view">
+      <div class="view-heading"><div><p class="eyebrow">LEARN</p><h1>Italian Game basics</h1><p class="muted">A short guided opening line. Play each highlighted move in order.</p></div><span class="pill">5 MOVES</span></div>
+      <div class="puzzle-layout">
+        <div class="board-column"><div id="lesson-board" class="chessboard" data-context="learn"></div><div class="board-toolbar"><button class="icon-button" data-action="lesson-back">↶ <span>Back</span></button><button class="icon-button" data-action="lesson-next">→ <span>Next move</span></button><button class="icon-button" data-action="lesson-reset">↺ <span>Restart</span></button></div></div>
+        <div class="game-panel"><p class="eyebrow">OPENING GUIDE</p><h2 id="lesson-title">Claim the center</h2><p id="lesson-copy">Start with 1. e4. It controls central squares and opens lines for your pieces.</p><div id="lesson-progress" class="progress-track"><span></span></div><p class="tiny-note">The guide advances only when the expected legal move is played.</p></div>
+      </div>
+    </section>
+
+    <section id="view-analysis" class="view">
+      <div class="view-heading"><div><p class="eyebrow">ANALYSIS BOARD</p><h1>Explore a position</h1><p class="muted">Load a FEN, make legal moves and export the position.</p></div></div>
+      <div class="puzzle-layout">
+        <div class="board-column"><div id="analysis-board" class="chessboard" data-context="analysis"></div><div class="board-toolbar"><button class="icon-button" data-action="analysis-undo">↶ <span>Undo</span></button><button class="icon-button" data-action="analysis-flip">⇅ <span>Flip</span></button><button class="icon-button" data-action="analysis-copy">▣ <span>Copy FEN</span></button></div></div>
+        <div class="game-panel"><p class="eyebrow">POSITION TOOLS</p><h2>FEN position</h2><label class="field-label" for="fen-input">Paste FEN</label><textarea id="fen-input" rows="4" spellcheck="false"></textarea><button class="button primary full" data-action="load-fen">Load position</button><div id="analysis-feedback" class="game-status">Standard starting position.</div><button class="button subtle full" data-action="analysis-reset">Reset board</button></div>
+      </div>
+    </section>
+
+    <section id="view-profile" class="view">
+      <div class="view-heading"><div><p class="eyebrow">PLAYER PROFILE</p><h1>My profile</h1><p class="muted">Your stats on this device.</p></div></div>
+      <div class="profile-hero"><div class="profile-avatar">C</div><div><h2>ChessBuddy player</h2><p class="muted">Local profile · No account connected</p></div></div>
+      <div class="stat-grid profile-stats"><div class="stat-card"><span>Games</span><strong id="profile-games">0</strong></div><div class="stat-card"><span>Wins</span><strong id="profile-wins">0</strong></div><div class="stat-card"><span>Draws</span><strong id="profile-draws">0</strong></div><div class="stat-card"><span>Puzzles solved</span><strong id="profile-puzzles">0</strong></div></div>
+      <div class="notice-card"><strong>Local-only profile</strong><p>Account sync, friends, ratings and cross-device history are not connected yet.</p></div>
+    </section>
+
+    <section id="view-settings" class="view">
+      <div class="view-heading"><div><p class="eyebrow">PREFERENCES</p><h1>Settings</h1><p class="muted">Personalize the board on this device.</p></div></div>
+      <div class="settings-card"><label for="board-theme">Board colours</label><select id="board-theme"><option value="classic">Classic wood</option><option value="green">Tournament green</option><option value="blue">Slate blue</option></select></div>
+      <div class="settings-card"><label for="coordinates-toggle">Show board coordinates</label><input type="checkbox" id="coordinates-toggle" checked></div>
+      <div class="settings-card"><label for="legal-toggle">Highlight legal moves</label><input type="checkbox" id="legal-toggle" checked></div>
+      <div class="notice-card"><strong>Build information</strong><p>ChessBuddy 0.1.0 · Clean rebuild · Offline-first foundation</p></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Mobile navigation">
+    <button data-view="home" class="active"><span>⌂</span>Home</button>
+    <button data-view="play"><span>♟</span>Play</button>
+    <button data-view="puzzles"><span>✦</span>Puzzles</button>
+    <button data-view="learn"><span>▤</span>Learn</button>
+    <button data-view="profile"><span>●</span>Profile</button>
+  </nav>
+
+  <div id="promotion-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Choose promotion">
+    <div class="modal-card"><h2>Promote pawn</h2><p>Choose a piece.</p><div class="promotion-options"><button data-promotion="q">♕ Queen</button><button data-promotion="r">♖ Rook</button><button data-promotion="b">♗ Bishop</button><button data-promotion="n">♘ Knight</button></div><button class="text-button" data-action="cancel-promotion">Cancel</button></div>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="js/chess-bundle.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
