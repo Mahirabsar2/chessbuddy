@@ -60,8 +60,8 @@ for (const token of [
 assert(css.includes('.achievement-grid'), 'achievement cards have dedicated layout styles');
 assert(css.includes('.bot-cup-card'), 'tournament cards have dedicated layout styles');
 assert(css.includes('.collection-game-row'), 'collection rows have dedicated layout styles');
-assert(app.includes('not official Chess.com trophies'), 'local achievements are not misrepresented');
-assert(app.includes('OFFLINE'), 'solo events are not misrepresented as online tournaments');
+assert(html.includes('not official Chess.com trophies'), 'local achievements are not misrepresented');
+assert(html.includes('Solo Bot Cup') && html.includes('OFFLINE'), 'solo events are not misrepresented as online tournaments');
 
 console.log('OK ChessBuddy 2.0.0 expansion: ' + achievements.length +
   ' achievements, local bot cups, and PGN collections with navigation and styling');
