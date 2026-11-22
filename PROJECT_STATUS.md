@@ -1,4 +1,11 @@
-# ChessBuddy project status — reviewed 2026-11-21
+# ChessBuddy project status — reviewed 2026-11-22
+
+## 2026-11-22 review delta
+- No newer Next Gen source commit or workflow run exists after branch HEAD `da20f25c289970e887517a2eb8209d7ed0450ea4` and successful run #98 / ID `44898901503` (2026-11-21). No new build or tests were run on 2026-11-22.
+- Rechecked run #98 job and artifacts: success; APK artifact `14705436740` and separate source artifact `14704304757`. The latter contains `chessbuddy-nextgen-1.0.0-source.tar.gz`, not a matching source ZIP. Both artifacts remain available until 2027-02-19.
+- Reconfirmed the default-branch workflow still downloads/asserts v0.4.0. Main run #52 / ID `44779798532` succeeded on 2026-11-20 and uploaded `ChessBuddy-build-52` (ID `14651381404`), but uses a temporary personal sideload key and is a legacy v0.4.0 build.
+- README packaging instructions do not match the Next Gen workflow: README claims a matching source ZIP in the build artifact; Next Gen CI uploads the APK and a separate tar.gz source artifact.
+- Release blockers and exact next steps remain as listed below: combined exact APK/source ZIP, metadata assertions, persistent signing, Playwright/device tests, source secret audit and version/workflow alignment.
 
 ## Required product scope
 - Fresh Android chess app powered by native Stockfish.
