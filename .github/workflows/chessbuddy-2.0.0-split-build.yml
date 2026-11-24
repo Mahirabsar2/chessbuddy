@@ -6,6 +6,7 @@ on:
     branches:
       - next-gen-1.0.0
       - chessbuddy-nextgen-2.0.0
+      - chessbuddy-cloud-persistence-foundation
     paths:
       - 'ChessBuddy-2.0.0-Part1-Stockfish.zip'
       - 'ChessBuddy-2.0.0-Part2-Stockfish.zip'
@@ -69,10 +70,14 @@ jobs:
           python3 repairs/nextgen_mobile_experience.py
           python3 repairs/nextgen_2_0_0_expansion.py
           python3 repairs/nextgen_artwork_system.py
+          python3 repairs/nextgen_cloud_persistence.py
           node --check app/src/main/assets/js/app.js
           node --check app/src/main/assets/js/lichess.js
           node --check app/src/main/assets/js/online.js
           node --check app/src/main/assets/js/updater.js
+          grep -q 'chessbuddy_user_state' app/src/main/assets/js/online.js
+          grep -q 'chessbuddy_saved_games' app/src/main/assets/js/online.js
+          grep -q 'ChessBuddy-NextGen-2.0.0.apk' app/src/main/assets/js/updater.js
           grep -q 'rv-summary-actions' app/src/main/assets/css/app.css
           grep -q 'rv-action-icon' app/src/main/assets/js/app.js
           grep -q 'view-puzzles' app/src/main/assets/index.html
